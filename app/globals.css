@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background-color: #1A1428;
+  color: #F5EFE0;
+  min-height: 100%;
+}
+
+/* Textura sutil de grano — como grano de papel/vinilo — sobre el fondo */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='1'/></svg>");
+}
+
+/* Halo dorado difuso detrás del hero */
+.hero-halo {
+  background: radial-gradient(
+    circle at 50% 40%,
+    rgba(233, 196, 106, 0.18) 0%,
+    rgba(233, 196, 106, 0.06) 30%,
+    rgba(26, 20, 40, 0) 60%
+  );
+}
+
+/* Superficie sutilmente elevada (cards discretas, no shadow soft) */
+.surface {
+  background-color: #251B3A;
+  border: 1px solid rgba(180, 168, 204, 0.08);
+}
+
+/* Foco visible, respetuoso con la paleta */
+*:focus-visible {
+  outline: 2px solid #E9C46A;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Respeta reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Animación única del hero: pulso lento del disco del reproductor */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spin-slow 24s linear infinite;
+}
+
+/* Barra de progreso animada del mockup */
+@keyframes progress-wave {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(0%); }
+}
+.animate-progress {
+  animation: progress-wave 6s ease-in-out infinite alternate;
+}
+
+/* Scrollbar discreto */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #0F0B1A; }
+::-webkit-scrollbar-thumb { background: #3a2f52; border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #4a3f66; }
