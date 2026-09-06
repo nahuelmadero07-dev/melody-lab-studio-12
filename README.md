@@ -140,4 +140,4 @@ melody-lab-studio/
 - **Verificar endpoint de Lyria 3 Pro**: si al deployar da error tipo "model not found", verificar el endpoint exacto en https://fal.ai/models y actualizar `LYRIA_ENDPOINT` en `lib/fal.ts`.
 - **Dominio propio**: cuando compres el dominio y lo verifiques en Resend, cambiar el `FROM` en `lib/resend.ts` para que los emails salgan desde `canciones@melodylabstudio.com`.
 - **Timeout de Lyria**: si consistentemente supera 60s (plan Hobby), migrar a Vercel Pro (300s) o encolar con QStash / Inngest.
-- **Rate limiting**: agregar rate limiting en `/api/pedido` para evitar abuse.
+- **Rate limiting**: agregar rate limiting en `/api/pedido` para evitar abuse
