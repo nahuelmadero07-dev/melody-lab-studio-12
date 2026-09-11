@@ -18,7 +18,7 @@ fal.config({
  *   - "fal-ai/minimax-music/v2"     — $0.15 por canción, buena calidad español
  *   - "fal-ai/elevenlabs/music"     — $0.80/min, más caro, calidad premium
  */
-const LYRIA_ENDPOINT = "fal-ai/lyria-3-pro";
+const LYRIA_ENDPOINT = "fal-ai/lyria3/pro";
 
 export type CancionGenerada = {
   audioUrl: string; // URL temporal en fal.ai (hay que descargar y subir a B2)
