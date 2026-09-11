@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import { supabaseAdmin } from "@/lib/supabase";
+import { ejecutarPipeline } from "@/lib/pipeline";
 import type { NuevoPedido } from "@/types";
 
-// Este endpoint responde rápido (< 3s) y dispara el pipeline pesado en background
 export const runtime = "nodejs";
-export const maxDuration = 10;
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as NuevoPedido;
 
-    // Validación mínima
     const errores = validarPayload(body);
     if (errores.length > 0) {
       return NextResponse.json(
@@ -19,7 +19,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Insertamos el pedido con status 'generando'. Supabase completa id y token automáticamente.
     const { data, error } = await supabaseAdmin
       .from("pedidos")
       .insert({
@@ -48,16 +47,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Fire-and-forget: pegamos al endpoint /api/generar/[id] sin esperar respuesta.
-    // Esto libera el response inmediatamente y el pipeline corre en otra invocación.
     const baseUrl = getBaseUrl(req);
-    fetch(`${baseUrl}/api/generar/${data.id}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-internal-secret": process.env.INTERNAL_SECRET ?? "dev",
-      },
-    }).catch((e) => console.error("No pude disparar el pipeline:", e));
+    waitUntil(ejecutarPipeline(data.id, baseUrl));
 
     return NextResponse.json({
       ok: true,
@@ -88,7 +79,6 @@ function validarPayload(b: any): string[] {
 }
 
 function getBaseUrl(req: NextRequest): string {
-  // En Vercel, VERCEL_URL contiene el dominio sin protocolo
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   const proto = req.headers.get("x-forwarded-proto") ?? "http";
   const host = req.headers.get("host") ?? "localhost:3000";
