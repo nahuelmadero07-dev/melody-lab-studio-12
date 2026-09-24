@@ -4,7 +4,7 @@ import type { Pedido } from "@/types";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 // Usamos Flash porque para letras cortas nos alcanza sobrado y sale muchísimo más barato
-const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 /**
  * Genera la letra de una canción personalizada usando Gemini.
