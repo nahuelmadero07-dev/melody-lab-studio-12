@@ -5,54 +5,46 @@ fal.config({
   credentials: process.env.FAL_KEY!,
 });
 
-/**
- * IMPORTANTE — VERIFICAR EL ENDPOINT EXACTO DE LYRIA 3 PRO EN FAL.AI
- *
- * Al momento de escribir esto, el endpoint es "fal-ai/lyria-3-pro" según la convención.
- * Si al ejecutar da error tipo "endpoint not found" o "model not available":
- *   1. Andá a https://fal.ai/models y buscá "lyria" en el explorer.
- *   2. Copiá el endpoint exacto que aparece (formato "fal-ai/xxx").
- *   3. Reemplazá el valor de LYRIA_ENDPOINT abajo.
- *
- * Alternativas testeadas en el mercado si Lyria 3 Pro no está disponible:
- *   - "fal-ai/minimax-music/v2"     — $0.15 por canción, buena calidad español
- *   - "fal-ai/elevenlabs/music"     — $0.80/min, más caro, calidad premium
- */
 const LYRIA_ENDPOINT = "fal-ai/lyria3/pro";
 
-export type CancionGenerada = {
-  audioUrl: string; // URL temporal en fal.ai (hay que descargar y subir a B2)
-  duracionSeg: number;
+export type CancionEnCola = {
+  requestId: string;
 };
 
 /**
- * Genera una canción con voz cantada usando Lyria 3 Pro vía fal.ai.
- * Devuelve la URL temporal del MP3 (hay que descargarla ANTES de que expire).
- *
- * @param pedido        Datos del pedido para construir el prompt.
- * @param variante      "A" o "B" — para generar 2 versiones distintas del mismo pedido.
+ * Encola una canción en fal.ai y devuelve el request_id inmediatamente.
+ * NO espera a que termine. fal.ai llamará al webhook cuando esté listo.
  */
-export async function generarCancion(
+export async function encolarCancion(
   pedido: Pedido,
-  variante: "A" | "B"
-): Promise<CancionGenerada> {
+  variante: "A" | "B",
+  webhookUrl: string
+): Promise<CancionEnCola> {
   const prompt = construirPromptMusical(pedido, variante);
   const letra = pedido.letra ?? "";
 
-  const result: any = await fal.subscribe(LYRIA_ENDPOINT, {
+  const { request_id } = await fal.queue.submit(LYRIA_ENDPOINT, {
     input: {
       prompt,
       lyrics: letra,
-      // La duración depende del modelo — Lyria 3 Pro soporta hasta 180s
       duration_seconds: 150,
-      // Para variantes distintas usamos seeds diferentes
       seed: variante === "A" ? 42 : 137,
     },
-    logs: false,
+    webhookUrl,
   });
 
-  // La respuesta de fal para modelos de música suele tener .audio.url o .audio_file.url
-  // Manejamos ambos formatos por robustez.
+  return { requestId: request_id };
+}
+
+/**
+ * Trae el resultado FINAL de un request ya completado (lo usa el webhook).
+ * fal.ai avisa "ya terminó", nosotros vamos a buscar el resultado.
+ */
+export async function obtenerResultado(requestId: string): Promise<string> {
+  const result: any = await fal.queue.result(LYRIA_ENDPOINT, {
+    requestId,
+  });
+
   const audioUrl =
     result?.data?.audio?.url ??
     result?.data?.audio_file?.url ??
@@ -61,27 +53,23 @@ export async function generarCancion(
 
   if (!audioUrl) {
     throw new Error(
-      `fal.ai no devolvió audio URL. Respuesta cruda: ${JSON.stringify(result).slice(0, 500)}`
+      `fal.ai no devolvió audio URL. Respuesta: ${JSON.stringify(result).slice(0, 500)}`
     );
   }
 
-  return {
-    audioUrl,
-    duracionSeg: result?.data?.duration ?? 150,
-  };
+  return audioUrl;
 }
 
 function construirPromptMusical(pedido: Pedido, variante: "A" | "B"): string {
   const voz =
     pedido.voz.toLowerCase().includes("masculina") ||
-    pedido.voz.toLowerCase().includes("las dos") && variante === "A"
+    (pedido.voz.toLowerCase().includes("las dos") && variante === "A")
       ? "male vocal"
       : "female vocal";
 
   const estiloIngles = traducirEstilo(pedido.estilo);
   const climaIngles = traducirClima(pedido.clima);
 
-  // Sutiles variaciones entre A y B para que suenen distintas pero coherentes
   const variacion =
     variante === "A"
       ? "warm acoustic arrangement, intimate feel"
