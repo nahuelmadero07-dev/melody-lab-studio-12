@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { supabaseAdmin } from "@/lib/supabase";
-import { ejecutarPipeline } from "@/lib/pipeline";
+import { arrancarPipeline } from "@/lib/pipeline";
 import type { NuevoPedido } from "@/types";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
   try {
@@ -47,8 +46,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Arrancamos el pipeline en background. arrancarPipeline() ahora es rápido:
+    // solo genera la letra (2-5s) y encola las canciones en fal.ai (1s).
+    // fal.ai avisará al webhook /api/fal-webhook cuando cada canción esté lista.
     const baseUrl = getBaseUrl(req);
-    waitUntil(ejecutarPipeline(data.id, baseUrl));
+    waitUntil(arrancarPipeline(data.id, baseUrl));
 
     return NextResponse.json({
       ok: true,
