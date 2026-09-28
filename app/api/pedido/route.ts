@@ -6,6 +6,10 @@ import type { NuevoPedido } from "@/types";
 
 export const runtime = "nodejs";
 
+// URL FIJA de producción — no usamos VERCEL_URL porque devuelve la URL del deploy
+// específico (larga y efímera), y fal.ai puede no llegar cuando el webhook responda tarde.
+const BASE_URL_PRODUCCION = "https://melody-lab-studio-k1wf.vercel.app";
+
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as NuevoPedido;
@@ -46,11 +50,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Arrancamos el pipeline en background. arrancarPipeline() ahora es rápido:
-    // solo genera la letra (2-5s) y encola las canciones en fal.ai (1s).
-    // fal.ai avisará al webhook /api/fal-webhook cuando cada canción esté lista.
-    const baseUrl = getBaseUrl(req);
-    waitUntil(arrancarPipeline(data.id, baseUrl));
+    // Arrancamos el pipeline en background con la URL de producción estable
+    waitUntil(arrancarPipeline(data.id, BASE_URL_PRODUCCION));
 
     return NextResponse.json({
       ok: true,
@@ -78,11 +79,4 @@ function validarPayload(b: any): string[] {
   if (!b.voz) e.push("Falta voz");
   if (!b.email || !/\S+@\S+\.\S+/.test(b.email)) e.push("Email inválido");
   return e;
-}
-
-function getBaseUrl(req: NextRequest): string {
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  const proto = req.headers.get("x-forwarded-proto") ?? "http";
-  const host = req.headers.get("host") ?? "localhost:3000";
-  return `${proto}://${host}`;
 }
