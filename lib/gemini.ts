@@ -3,8 +3,8 @@ import type { Pedido } from "@/types";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-// Modelos ordenados de más nuevo/rápido a más viejo/estable
-// "latest" son alias que Google mantiene actualizados automáticamente
+// Modelos ordenados de más rápido/nuevo a más estable/lento
+// Los alias "latest" los mantiene Google apuntando a la versión más nueva
 const MODELOS_FALLBACK = [
   "gemini-flash-latest",
   "gemini-2.5-flash",
@@ -22,25 +22,45 @@ function esperar(ms: number): Promise<void> {
 function construirPrompt(pedido: Pedido): string {
   return `Eres un letrista profesional experto en canciones personalizadas emotivas.
 
-Crea una letra de canción original para:
+Crea una letra de canción original a partir de este pedido:
 
-DESTINATARIO: ${pedido.nombre_destinatario || "un ser querido"}
-QUIEN LA DEDICA: ${pedido.nombre_dedicante || "alguien especial"}
-OCASIÓN: ${pedido.ocasion || "una ocasión especial"}
-RELACIÓN: ${pedido.relacion || "no especificada"}
-ESTILO MUSICAL: ${pedido.estilo_musical || "balada emotiva"}
-MENSAJE PRINCIPAL: ${pedido.mensaje_principal || "expresar cariño y aprecio"}
-RECUERDOS O DETALLES ESPECIALES: ${pedido.detalles_especiales || "no especificados"}
+OCASIÓN: ${pedido.ocasion}
+DE PARTE DE: ${pedido.tu_nombre}
+PARA: ${pedido.destinatario}
+RELACIÓN ENTRE ELLOS: ${pedido.relacion}
+HISTORIA / RECUERDOS / DETALLES A INCORPORAR:
+${pedido.historia}
 
-INSTRUCCIONES:
-- Estructura: 2 versos + coro + 1 verso + coro final
-- Duración estimada: 2-3 minutos cantados
-- Tono emotivo, personal y auténtico
-- Incorpora los detalles específicos de forma natural
-- Rima cuando sea posible pero prioriza el mensaje sobre la métrica
-- En español neutro salvo que el estilo pida otra cosa
+ESTILO MUSICAL: ${pedido.estilo}
+CLIMA EMOCIONAL: ${pedido.clima}
+TIPO DE VOZ: ${pedido.voz}
 
-Devuelve SOLO la letra, sin títulos ni explicaciones ni acordes.`;
+INSTRUCCIONES DE ESCRITURA:
+- Estructura: Verso 1 + Coro + Verso 2 + Coro + Puente + Coro final
+- Duración estimada al cantarla: entre 2 y 3 minutos
+- Tono emotivo, personal y auténtico, adecuado al clima "${pedido.clima}"
+- Incorpora de forma natural nombres, momentos y detalles específicos de la historia
+- Prioriza que el mensaje se entienda y emocione, por encima de la métrica perfecta
+- Rima cuando fluya, pero no fuerces palabras que sacrifiquen la emoción
+- Escríbela en español neutro salvo que el estilo "${pedido.estilo}" pida un dialecto específico
+- El destinatario (${pedido.destinatario}) debe sentir que la canción es sobre él/ella específicamente
+
+FORMATO DE SALIDA:
+Devuelve SOLAMENTE la letra, con las secciones marcadas así:
+[Verso 1]
+...
+[Coro]
+...
+[Verso 2]
+...
+[Coro]
+...
+[Puente]
+...
+[Coro final]
+...
+
+NO incluyas título, explicaciones, comentarios, acordes, ni notas sobre la interpretación. Solo la letra.`;
 }
 
 export async function generarLetra(pedido: Pedido): Promise<string> {
