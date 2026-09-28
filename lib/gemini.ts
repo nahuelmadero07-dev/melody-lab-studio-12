@@ -3,21 +3,67 @@ import type { Pedido } from "@/types";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-// Usamos Flash porque para letras cortas nos alcanza sobrado y sale muchísimo más barato
-const model = genAI.getGenerativeModel({ model: "gemini-3.8-flash" });
+// Lista de modelos en orden de preferencia. Si uno falla o está saturado,
+// probamos el siguiente. Podés reordenar según lo que veas que funciona mejor.
+const MODELOS_FALLBACK = [
+  "gemini-3.8-flash",
+  "gemini-3.6-flash",
+  "gemini-2.5-flash",
+  "gemini-1.5-flash",
+];
 
 /**
  * Genera la letra de una canción personalizada usando Gemini.
- * Devuelve un objeto con la letra estructurada por secciones.
+ * Prueba varios modelos en cascada si el primero falla (503, 429, timeout).
  */
 export async function generarLetra(pedido: Pedido): Promise<string> {
   const prompt = construirPrompt(pedido);
+  let ultimoError: any = null;
 
-  const result = await model.generateContent(prompt);
-  const texto = result.response.text().trim();
+  for (const nombreModelo of MODELOS_FALLBACK) {
+    // Intentamos hasta 2 veces por modelo, con espera exponencial
+    for (let intento = 1; intento <= 2; intento++) {
+      try {
+        console.log(`Gemini: probando ${nombreModelo} (intento ${intento})`);
+        const model = genAI.getGenerativeModel({ model: nombreModelo });
+        const result = await model.generateContent(prompt);
+        const texto = result.response.text().trim();
+        console.log(`Gemini: éxito con ${nombreModelo}`);
+        return texto.replace(/^```[\w]*\n?/, "").replace(/\n?```$/, "").trim();
+      } catch (err: any) {
+        ultimoError = err;
+        const msg = err?.message ?? "";
+        console.error(`Gemini falló con ${nombreModelo}: ${msg.slice(0, 200)}`);
 
-  // Sanitizamos: sacamos backticks o marcado que Gemini a veces mete
-  return texto.replace(/^```[\w]*\n?/, "").replace(/\n?```$/, "").trim();
+        // Si es 404 (modelo no existe), no reintentamos, pasamos al siguiente modelo
+        if (msg.includes("404") || msg.includes("not found") || msg.includes("no longer available")) {
+          break;
+        }
+
+        // Si es 503 (saturado) o 429 (rate limit), esperamos antes de reintentar
+        if (msg.includes("503") || msg.includes("429") || msg.includes("high demand")) {
+          if (intento < 2) {
+            const espera = intento * 3000; // 3s el primer reintento
+            console.log(`Gemini: esperando ${espera}ms antes de reintentar`);
+            await sleep(espera);
+            continue;
+          }
+        }
+
+        // Otro tipo de error → pasamos al siguiente modelo directo
+        break;
+      }
+    }
+  }
+
+  // Si llegamos acá, todos los modelos fallaron
+  throw new Error(
+    `Todos los modelos de Gemini fallaron. Último error: ${ultimoError?.message ?? "desconocido"}`
+  );
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 function construirPrompt(pedido: Pedido): string {
