@@ -1,9 +1,10 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import type { Pedido } from "@/types";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-// Modelos ordenados de más nuevo a más viejo/estable
-// "latest" son alias que Google mantiene actualizados
+// Modelos ordenados de más nuevo/rápido a más viejo/estable
+// "latest" son alias que Google mantiene actualizados automáticamente
 const MODELOS_FALLBACK = [
   "gemini-flash-latest",
   "gemini-2.5-flash",
@@ -18,7 +19,32 @@ function esperar(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function generarLetra(prompt: string): Promise<string> {
+function construirPrompt(pedido: Pedido): string {
+  return `Eres un letrista profesional experto en canciones personalizadas emotivas.
+
+Crea una letra de canción original para:
+
+DESTINATARIO: ${pedido.nombre_destinatario || "un ser querido"}
+QUIEN LA DEDICA: ${pedido.nombre_dedicante || "alguien especial"}
+OCASIÓN: ${pedido.ocasion || "una ocasión especial"}
+RELACIÓN: ${pedido.relacion || "no especificada"}
+ESTILO MUSICAL: ${pedido.estilo_musical || "balada emotiva"}
+MENSAJE PRINCIPAL: ${pedido.mensaje_principal || "expresar cariño y aprecio"}
+RECUERDOS O DETALLES ESPECIALES: ${pedido.detalles_especiales || "no especificados"}
+
+INSTRUCCIONES:
+- Estructura: 2 versos + coro + 1 verso + coro final
+- Duración estimada: 2-3 minutos cantados
+- Tono emotivo, personal y auténtico
+- Incorpora los detalles específicos de forma natural
+- Rima cuando sea posible pero prioriza el mensaje sobre la métrica
+- En español neutro salvo que el estilo pida otra cosa
+
+Devuelve SOLO la letra, sin títulos ni explicaciones ni acordes.`;
+}
+
+export async function generarLetra(pedido: Pedido): Promise<string> {
+  const prompt = construirPrompt(pedido);
   const errores: string[] = [];
 
   for (const nombreModelo of MODELOS_FALLBACK) {
