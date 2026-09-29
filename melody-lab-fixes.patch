@@ -1,0 +1,612 @@
+diff --git a/app/api/crear-pago/route.ts b/app/api/crear-pago/route.ts
+index 6db70c0..3adaf95 100644
+--- a/app/api/crear-pago/route.ts
++++ b/app/api/crear-pago/route.ts
+@@ -1,6 +1,7 @@
+ import { NextRequest, NextResponse } from "next/server";
+ import { supabaseAdmin } from "@/lib/supabase";
+ import { crearLinkPago } from "@/lib/mercadopago";
++import { BASE_URL } from "@/lib/config";
+ 
+ export const runtime = "nodejs";
+ export const maxDuration = 15;
+@@ -39,12 +40,13 @@ export async function POST(req: NextRequest) {
+       );
+     }
+ 
+-    const baseUrl = getBaseUrl(req);
++    // BASE_URL fija: las back_urls y la notification_url de Mercado Pago tienen
++    // que apuntar al dominio público, no al deploy efímero de VERCEL_URL.
+     const initPoint = await crearLinkPago({
+       token: pedido.token,
+       destinatario: pedido.destinatario,
+       monto: pedido.monto ?? 9.9,
+-      baseUrl,
++      baseUrl: BASE_URL,
+     });
+ 
+     return NextResponse.json({ ok: true, url: initPoint });
+@@ -57,9 +59,3 @@ export async function POST(req: NextRequest) {
+   }
+ }
+ 
+-function getBaseUrl(req: NextRequest): string {
+-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+-  const proto = req.headers.get("x-forwarded-proto") ?? "http";
+-  const host = req.headers.get("host") ?? "localhost:3000";
+-  return `${proto}://${host}`;
+-}
+diff --git a/app/api/fal-webhook/[pedidoId]/[variante]/route.ts b/app/api/fal-webhook/[pedidoId]/[variante]/route.ts
+index 52364dd..8206d60 100644
+--- a/app/api/fal-webhook/[pedidoId]/[variante]/route.ts
++++ b/app/api/fal-webhook/[pedidoId]/[variante]/route.ts
+@@ -1,10 +1,11 @@
+ import { NextRequest, NextResponse } from "next/server";
+ import { waitUntil } from "@vercel/functions";
+-import { finalizarVariante } from "@/lib/pipeline";
++import { finalizarVariante, marcarError } from "@/lib/pipeline";
++import { BASE_URL } from "@/lib/config";
+ 
+ export const runtime = "nodejs";
+-
+-const BASE_URL_PRODUCCION = "https://melody-lab-studio-k1wf.vercel.app";
++// Descargar un MP3 de ~2,5 min de fal y subirlo a B2 puede llevar 10-20s.
++export const maxDuration = 60;
+ 
+ /**
+  * Este endpoint recibe el aviso de fal.ai cuando UNA canción terminó de generarse.
+@@ -12,6 +13,8 @@ const BASE_URL_PRODUCCION = "https://melody-lab-studio-k1wf.vercel.app";
+  *
+  * Los datos vienen por el path (no por query params) porque fal.ai
+  * rechaza URLs con query params.
++ *
++ * Payload de fal: { request_id, status: "OK" | "ERROR", payload, error, ... }
+  */
+ export async function POST(
+   req: NextRequest,
+@@ -32,7 +35,12 @@ export async function POST(
+     console.log(`Webhook fal.ai — pedido ${pedidoId} variante ${variante} status ${status}`);
+ 
+     if (status !== "OK" && status !== "COMPLETED") {
+-      console.error("fal.ai reportó error:", JSON.stringify(body).slice(0, 500));
++      // Antes esto solo se logueaba y el pedido quedaba en "generando" PARA SIEMPRE:
++      // el cliente veía "componiendo..." eternamente y nunca recibía nada.
++      const detalle =
++        body?.error ?? body?.payload_error ?? JSON.stringify(body ?? {}).slice(0, 400);
++      console.error("fal.ai reportó error:", detalle);
++      await marcarError(pedidoId, `fal.ai variante ${variante}: ${detalle}`);
+       return NextResponse.json({ ok: true });
+     }
+ 
+@@ -40,7 +48,7 @@ export async function POST(
+       return NextResponse.json({ ok: false, error: "Sin request_id" }, { status: 400 });
+     }
+ 
+-    waitUntil(finalizarVariante(pedidoId, variante as "A" | "B", requestId, BASE_URL_PRODUCCION));
++    waitUntil(finalizarVariante(pedidoId, variante as "A" | "B", requestId, BASE_URL));
+ 
+     return NextResponse.json({ ok: true });
+   } catch (err: any) {
+diff --git a/app/api/pedido/route.ts b/app/api/pedido/route.ts
+index 23a3554..ceb39e1 100644
+--- a/app/api/pedido/route.ts
++++ b/app/api/pedido/route.ts
+@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
+ import { waitUntil } from "@vercel/functions";
+ import { supabaseAdmin } from "@/lib/supabase";
+ import { arrancarPipeline } from "@/lib/pipeline";
++import { BASE_URL } from "@/lib/config";
+ import type { NuevoPedido } from "@/types";
+ 
+ export const runtime = "nodejs";
++// La cadena de fallbacks de Gemini puede tardar hasta ~30s si Google está
++// saturado. waitUntil() corre después de responder, pero sigue atado a este límite.
++export const maxDuration = 60;
+ 
+-// URL FIJA de producción — no usamos VERCEL_URL porque devuelve la URL del deploy
+-// específico (larga y efímera), y fal.ai puede no llegar cuando el webhook responda tarde.
+-const BASE_URL_PRODUCCION = "https://melody-lab-studio-k1wf.vercel.app";
++// Cada pedido cuesta ~US$0,16 en fal.ai. Sin este freno, cualquiera puede
++// dejarte sin saldo en una tarde apretando "enviar".
++const MAX_PEDIDOS_POR_EMAIL_POR_HORA = 3;
+ 
+ export async function POST(req: NextRequest) {
+   try {
+@@ -22,6 +26,28 @@ export async function POST(req: NextRequest) {
+       );
+     }
+ 
++    const email = body.email.trim().toLowerCase();
++
++    // Anti-abuso básico por email (no frena a alguien con mails infinitos,
++    // pero sí al 95% de los curiosos y al botón apretado 10 veces).
++    const haceUnaHora = new Date(Date.now() - 60 * 60 * 1000).toISOString();
++    const { count } = await supabaseAdmin
++      .from("pedidos")
++      .select("id", { count: "exact", head: true })
++      .eq("email", email)
++      .gte("created_at", haceUnaHora);
++
++    if ((count ?? 0) >= MAX_PEDIDOS_POR_EMAIL_POR_HORA) {
++      return NextResponse.json(
++        {
++          ok: false,
++          error:
++            "Ya tenés varias canciones en proceso con este email. Esperá un rato y probá de nuevo.",
++        },
++        { status: 429 }
++      );
++    }
++
+     const { data, error } = await supabaseAdmin
+       .from("pedidos")
+       .insert({
+@@ -33,7 +59,7 @@ export async function POST(req: NextRequest) {
+         estilo: body.estilo,
+         clima: body.clima,
+         voz: body.voz,
+-        email: body.email,
++        email,
+         whatsapp: body.whatsapp || null,
+         status: "generando",
+         plan: "estandar",
+@@ -50,8 +76,8 @@ export async function POST(req: NextRequest) {
+       );
+     }
+ 
+-    // Arrancamos el pipeline en background con la URL de producción estable
+-    waitUntil(arrancarPipeline(data.id, BASE_URL_PRODUCCION));
++    // Arrancamos el pipeline en background con la URL pública estable
++    waitUntil(arrancarPipeline(data.id, BASE_URL));
+ 
+     return NextResponse.json({
+       ok: true,
+@@ -74,6 +100,7 @@ function validarPayload(b: any): string[] {
+   if (!b.destinatario || b.destinatario.length < 2) e.push("Falta nombre del destinatario");
+   if (!b.relacion) e.push("Falta relación");
+   if (!b.historia || b.historia.length < 20) e.push("Historia muy corta");
++  if (b.historia && b.historia.length > 3000) e.push("Historia demasiado larga (máx. 3000 caracteres)");
+   if (!b.estilo) e.push("Falta estilo");
+   if (!b.clima) e.push("Falta clima");
+   if (!b.voz) e.push("Falta voz");
+diff --git a/app/api/reintentar/[pedidoId]/route.ts b/app/api/reintentar/[pedidoId]/route.ts
+new file mode 100644
+index 0000000..88062fe
+--- /dev/null
++++ b/app/api/reintentar/[pedidoId]/route.ts
+@@ -0,0 +1,71 @@
++import { NextRequest, NextResponse } from "next/server";
++import { waitUntil } from "@vercel/functions";
++import { supabaseAdmin } from "@/lib/supabase";
++import { arrancarPipeline } from "@/lib/pipeline";
++import { BASE_URL } from "@/lib/config";
++
++export const runtime = "nodejs";
++export const maxDuration = 60;
++
++/**
++ * Endpoint ADMIN para reintentar un pedido que quedó en "error"
++ * (por ejemplo, porque Gemini devolvió 503 en todos los modelos, o fal falló).
++ *
++ * Sin esto, cada error transitorio de un proveedor = una venta perdida y un
++ * cliente al que tenés que pedirle que vuelva a cargar todo el formulario.
++ *
++ * Uso (desde tu terminal, nunca desde el frontend):
++ *   curl -X POST https://TU-DOMINIO/api/reintentar/<pedidoId> \
++ *        -H "x-admin-secret: $ADMIN_SECRET"
++ *
++ * Requiere la env var ADMIN_SECRET en Vercel (un string largo y random).
++ */
++export async function POST(
++  req: NextRequest,
++  { params }: { params: { pedidoId: string } }
++) {
++  const secret = process.env.ADMIN_SECRET;
++  if (!secret || req.headers.get("x-admin-secret") !== secret) {
++    return NextResponse.json({ ok: false, error: "No autorizado" }, { status: 401 });
++  }
++
++  const { pedidoId } = params;
++
++  const { data: pedido, error } = await supabaseAdmin
++    .from("pedidos")
++    .select("id, status")
++    .eq("id", pedidoId)
++    .single();
++
++  if (error || !pedido) {
++    return NextResponse.json({ ok: false, error: "Pedido no encontrado" }, { status: 404 });
++  }
++
++  if (pedido.status !== "error") {
++    return NextResponse.json(
++      { ok: false, error: `El pedido está en "${pedido.status}", solo se reintentan los que están en "error"` },
++      { status: 400 }
++    );
++  }
++
++  // Volvemos a "generando" y limpiamos lo que haya quedado a medias.
++  // Si alguna variante ya se había subido a B2, se vuelve a generar igual
++  // (más simple que reconciliar a medias; cuesta US$0,16).
++  await supabaseAdmin
++    .from("pedidos")
++    .update({
++      status: "generando",
++      error_message: null,
++      url_a: null,
++      url_b: null,
++      snippet_a: null,
++      snippet_b: null,
++      fal_request_id_a: null,
++      fal_request_id_b: null,
++    })
++    .eq("id", pedidoId);
++
++  waitUntil(arrancarPipeline(pedidoId, BASE_URL));
++
++  return NextResponse.json({ ok: true, mensaje: "Pipeline relanzado" });
++}
+diff --git a/app/api/webhook-mp/route.ts b/app/api/webhook-mp/route.ts
+index 8fab822..7c713ee 100644
+--- a/app/api/webhook-mp/route.ts
++++ b/app/api/webhook-mp/route.ts
+@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase";
+ import { consultarPago, verificarFirmaWebhook } from "@/lib/mercadopago";
+ import { enviarEmail } from "@/lib/resend";
+ import { emailPagoConfirmado } from "@/lib/emails";
++import { BASE_URL } from "@/lib/config";
+ 
+ export const runtime = "nodejs";
+ export const maxDuration = 30;
+@@ -81,8 +82,7 @@ export async function POST(req: NextRequest) {
+       .eq("id", pedido.id);
+ 
+     // Mandamos email de confirmación
+-    const baseUrl = getBaseUrl(req);
+-    const urlEscuchar = `${baseUrl}/escuchar/${token}`;
++    const urlEscuchar = `${BASE_URL}/escuchar/${token}`;
+     const { subject, html } = emailPagoConfirmado({
+       destinatarioLabel: pedido.destinatario,
+       urlEscuchar,
+@@ -103,9 +103,3 @@ export async function GET() {
+   return NextResponse.json({ ok: true, endpoint: "webhook-mp" });
+ }
+ 
+-function getBaseUrl(req: NextRequest): string {
+-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+-  const proto = req.headers.get("x-forwarded-proto") ?? "http";
+-  const host = req.headers.get("host") ?? "localhost:3000";
+-  return `${proto}://${host}`;
+-}
+diff --git a/app/escuchar/[token]/client.tsx b/app/escuchar/[token]/client.tsx
+index 661bb40..bee35c9 100644
+--- a/app/escuchar/[token]/client.tsx
++++ b/app/escuchar/[token]/client.tsx
+@@ -1,6 +1,22 @@
+ "use client";
+ 
+ import { useEffect, useRef, useState } from "react";
++import { useRouter } from "next/navigation";
++
++/**
++ * Mientras el pedido está "generando", vuelve a pedir la página al servidor
++ * cada N segundos. Sin esto, el texto "esta página se actualiza sola" era
++ * mentira: `revalidate` solo regenera el HTML en el servidor, el navegador
++ * del cliente no se entera de nada hasta que apreta F5.
++ */
++export function AutoRefresh({ cadaMs = 8000 }: { cadaMs?: number }) {
++  const router = useRouter();
++  useEffect(() => {
++    const id = setInterval(() => router.refresh(), cadaMs);
++    return () => clearInterval(id);
++  }, [router, cadaMs]);
++  return null;
++}
+ 
+ /**
+  * Reproductor de "adelanto" — permite escuchar solo los primeros 30 segundos.
+diff --git a/app/escuchar/[token]/page.tsx b/app/escuchar/[token]/page.tsx
+index c0b9d87..3f0ddc7 100644
+--- a/app/escuchar/[token]/page.tsx
++++ b/app/escuchar/[token]/page.tsx
+@@ -2,10 +2,11 @@ import Link from "next/link";
+ import { supabaseAdmin } from "@/lib/supabase";
+ import { firmarUrlsPedido } from "@/lib/pipeline";
+ import type { Pedido } from "@/types";
+-import { ReproductorSnippet, ReproductorCompleto, BotonComprar } from "./client";
++import { ReproductorSnippet, ReproductorCompleto, BotonComprar, AutoRefresh } from "./client";
+ 
+-// Revalidamos cada 5s porque el estado del pedido cambia (generando → listo → pagado)
+-export const revalidate = 5;
++// Siempre leemos el estado fresco de Supabase (generando → listo → pagado).
++// El refresco del lado del cliente lo hace <AutoRefresh /> mientras está generando.
++export const dynamic = "force-dynamic";
+ 
+ export default async function EscucharPage({
+   params,
+@@ -32,6 +33,7 @@ export default async function EscucharPage({
+         titulo={`Componiendo la canción para ${pedido.destinatario}...`}
+         subtitulo="Tarda entre 2 y 3 minutos. Podés dejar esta pestaña abierta — se actualiza sola. También te vamos a mandar un email cuando esté lista."
+       >
++        <AutoRefresh cadaMs={8000} />
+         <div className="mt-10 flex items-center gap-3 text-parchment-muted">
+           <div className="flex gap-1">
+             <span className="h-2 w-2 animate-bounce rounded-full bg-gold [animation-delay:-0.3s]" />
+diff --git a/lib/config.ts b/lib/config.ts
+new file mode 100644
+index 0000000..a3b6295
+--- /dev/null
++++ b/lib/config.ts
+@@ -0,0 +1,16 @@
++/**
++ * URL pública ESTABLE del sitio. Se usa para armar:
++ *  - los links de los emails (/escuchar/{token})
++ *  - los webhooks de fal.ai y de Mercado Pago
++ *  - las back_urls de Mercado Pago
++ *
++ * NUNCA usar process.env.VERCEL_URL para esto: apunta al deploy específico
++ * (URL larga, efímera y que puede estar detrás de Deployment Protection, con lo
++ * cual Mercado Pago o fal.ai reciben un 401 y el pedido queda colgado).
++ *
++ * Cuando tengas dominio propio, cargá NEXT_PUBLIC_BASE_URL en Vercel
++ * (ej: https://melodylabstudio.com) y listo — no hace falta tocar código.
++ */
++export const BASE_URL = (
++  process.env.NEXT_PUBLIC_BASE_URL ?? "https://melody-lab-studio-k1wf.vercel.app"
++).replace(/\/+$/, "");
+diff --git a/lib/gemini.ts b/lib/gemini.ts
+index 080514c..454cefb 100644
+--- a/lib/gemini.ts
++++ b/lib/gemini.ts
+@@ -3,22 +3,53 @@ import type { Pedido } from "@/types";
+ 
+ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+ 
+-// Modelos ordenados de más rápido/nuevo a más estable/lento
+-// Los alias "latest" los mantiene Google apuntando a la versión más nueva
++/**
++ * Modelos ordenados de preferido a último recurso.
++ *
++ * Cada modelo vive en un pool de capacidad distinto en Google, así que un
++ * "503 high demand" en uno NO implica 503 en el siguiente. Por eso la lista
++ * larga: la letra es el primer paso del pipeline y si falla, se pierde la venta.
++ *
++ * OJO: gemini-2.0-flash fue apagado el 1/6/2026 (devuelve 404, no sirve de
++ * fallback). Los alias "-latest" no figuran en la doc actual, no confiar en ellos.
++ * Verificá qué modelos ve tu API key con:
++ *   curl "https://generativelanguage.googleapis.com/v1beta/models?key=$GEMINI_API_KEY"
++ */
+ const MODELOS_FALLBACK = [
+   "gemini-3.8-flash",
+-  "gemini-flash-latest",
+-  "gemini-2.0-flash",
+-  "gemini-pro-latest",
++  "gemini-3.7-flash",
++  "gemini-3.6-flash",
++  "gemini-3.5-flash-lite",
++  "gemini-3.1-flash-lite",
+ ];
+ 
+ const MAX_INTENTOS_POR_MODELO = 2;
+-const ESPERA_ENTRE_INTENTOS_MS = 3000;
++// Backoff entre intentos del MISMO modelo: 2s antes del 2do intento.
++// (Si agregás un 3er intento, sumá otro valor acá, ej. 6000.)
++const ESPERAS_MS = [2000, 6000];
+ 
+ function esperar(ms: number): Promise<void> {
+   return new Promise((resolve) => setTimeout(resolve, ms));
+ }
+ 
++/**
++ * Decide qué hacer con un error de Gemini:
++ *  - "reintentar":     429 (rate limit), 5xx (alta demanda / caída), errores de red.
++ *  - "saltar_modelo":  400/403/404 → modelo inexistente, key inválida o prompt
++ *                      bloqueado. Insistir con el mismo modelo es tirar segundos.
++ */
++function clasificarError(error: any): "reintentar" | "saltar_modelo" {
++  const mensaje = String(error?.message ?? error ?? "");
++  // El SDK expone .status en GoogleGenerativeAIFetchError; si no, lo sacamos
++  // del texto: "[503 Service Unavailable] ..."
++  const desdeTexto = mensaje.match(/\[(\d{3})\s/)?.[1];
++  const codigo = Number(error?.status ?? error?.response?.status ?? desdeTexto ?? 0);
++
++  if (codigo === 0) return "reintentar"; // error de red / timeout, sin código HTTP
++  if (codigo === 429 || codigo >= 500) return "reintentar";
++  return "saltar_modelo";
++}
++
+ function construirPrompt(pedido: Pedido): string {
+   return `Eres un letrista profesional experto en canciones personalizadas emotivas.
+ 
+@@ -76,8 +107,7 @@ export async function generarLetra(pedido: Pedido): Promise<string> {
+ 
+         const model = genAI.getGenerativeModel({ model: nombreModelo });
+         const result = await model.generateContent(prompt);
+-        const response = result.response;
+-        const texto = response.text();
++        const texto = result.response.text();
+ 
+         if (texto && texto.trim().length > 0) {
+           console.log(`[Gemini] ✅ Éxito con modelo ${nombreModelo}`);
+@@ -86,15 +116,21 @@ export async function generarLetra(pedido: Pedido): Promise<string> {
+ 
+         throw new Error("Respuesta vacía de Gemini");
+       } catch (error: any) {
+-        const mensaje = `${nombreModelo} intento ${intento}: ${error.message || error}`;
++        const mensaje = `${nombreModelo} intento ${intento}: ${error?.message ?? error}`;
+         errores.push(mensaje);
+         console.error(`[Gemini] ❌ ${mensaje}`);
+ 
++        const accion = clasificarError(error);
++
++        if (accion === "saltar_modelo") {
++          console.log(`[Gemini] ⏭ ${nombreModelo} no es recuperable, paso al siguiente modelo`);
++          break; // sale del for de intentos, sigue con el próximo modelo
++        }
++
+         if (intento < MAX_INTENTOS_POR_MODELO) {
+-          console.log(
+-            `[Gemini] Esperando ${ESPERA_ENTRE_INTENTOS_MS}ms antes de reintentar...`
+-          );
+-          await esperar(ESPERA_ENTRE_INTENTOS_MS);
++          const espera = ESPERAS_MS[intento - 1] ?? ESPERAS_MS[ESPERAS_MS.length - 1];
++          console.log(`[Gemini] Esperando ${espera}ms antes de reintentar...`);
++          await esperar(espera);
+         }
+       }
+     }
+diff --git a/lib/pipeline.ts b/lib/pipeline.ts
+index 4173d29..dc68c2e 100644
+--- a/lib/pipeline.ts
++++ b/lib/pipeline.ts
+@@ -14,7 +14,7 @@ export async function arrancarPipeline(pedidoId: string, baseUrl: string) {
+   try {
+     const pedido = await getPedido(pedidoId);
+ 
+-    // 1. Letra (Gemini responde en 2-5 segundos)
++    // 1. Letra (Gemini responde en 2-5 segundos; con fallbacks puede llegar a ~30s)
+     const letra = await generarLetra(pedido);
+     pedido.letra = letra;
+     await supabaseAdmin.from("pedidos").update({ letra }).eq("id", pedidoId);
+@@ -39,19 +39,16 @@ export async function arrancarPipeline(pedidoId: string, baseUrl: string) {
+   } catch (err: any) {
+     const mensaje = err?.message ?? "Error desconocido al arrancar";
+     console.error(`arrancarPipeline falló para ${pedidoId}:`, err);
+-
+-    await supabaseAdmin
+-      .from("pedidos")
+-      .update({
+-        status: "error",
+-        error_message: mensaje.slice(0, 1000),
+-      })
+-      .eq("id", pedidoId);
++    await marcarError(pedidoId, mensaje);
+   }
+ }
+ 
+ /**
+  * PASO 2 DEL PIPELINE: procesa el resultado de UNA variante cuando fal.ai avisa.
++ *
++ * Las dos variantes (A y B) pueden terminar al mismo tiempo, así que este código
++ * corre dos veces en paralelo. Todo lo que pasa después de guardar la URL tiene
++ * que ser idempotente: solo UNA de las dos ejecuciones marca "listo" y manda el mail.
+  */
+ export async function finalizarVariante(
+   pedidoId: string,
+@@ -78,37 +75,96 @@ export async function finalizarVariante(
+       })
+       .eq("id", pedidoId);
+ 
+-    const pedidoActualizado = await getPedido(pedidoId);
+-    if (pedidoActualizado.url_a && pedidoActualizado.url_b) {
+-      await supabaseAdmin
+-        .from("pedidos")
+-        .update({
+-          status: "listo",
+-          delivered_at: new Date().toISOString(),
+-        })
+-        .eq("id", pedidoId);
+-
+-      const urlEscuchar = `${baseUrl}/escuchar/${pedidoActualizado.token}`;
+-      const { subject, html } = emailCancionLista({
+-        destinatarioLabel: pedidoActualizado.destinatario,
+-        urlEscuchar,
+-      });
+-      await enviarEmail(pedidoActualizado.email, subject, html);
++    // Transición ATÓMICA generando → listo.
++    // El UPDATE solo afecta la fila si sigue en "generando" y ya tiene las dos URLs.
++    // Si A y B llegan a la vez, la base garantiza que una sola de las dos ve
++    // `listos.length === 1`; la otra ve 0 y no manda mail duplicado.
++    const { data: listos, error: errListo } = await supabaseAdmin
++      .from("pedidos")
++      .update({
++        status: "listo",
++        delivered_at: new Date().toISOString(),
++      })
++      .eq("id", pedidoId)
++      .eq("status", "generando")
++      .not("url_a", "is", null)
++      .not("url_b", "is", null)
++      .select("id, email, destinatario, token");
++
++    if (errListo) {
++      throw new Error(`Supabase al marcar listo: ${errListo.message}`);
++    }
++
++    if (!listos || listos.length === 0) {
++      // Falta la otra variante todavía, o la otra ejecución ya marcó "listo".
++      console.log(`[pipeline] ${pedidoId} variante ${variante} guardada; esperando la otra`);
++      return;
+     }
++
++    const listo = listos[0];
++    await notificarCancionLista(
++      pedidoId,
++      listo.email,
++      listo.destinatario,
++      `${baseUrl}/escuchar/${listo.token}`
++    );
+   } catch (err: any) {
+     const mensaje = err?.message ?? "Error desconocido en finalización";
+     console.error(`finalizarVariante ${variante} falló para ${pedidoId}:`, err);
++    await marcarError(pedidoId, `Variante ${variante}: ${mensaje}`);
++  }
++}
+ 
++/**
++ * Manda el mail de "tu canción está lista".
++ *
++ * IMPORTANTE: acá la canción YA está generada, subida y el pedido YA está en
++ * "listo". Si Resend falla (por ejemplo, porque todavía usás onboarding@resend.dev
++ * que solo entrega a tu propio mail), el pedido NO se va a "error": el cliente
++ * igual puede escucharla entrando a /escuchar/{token}. Solo dejamos registro.
++ */
++async function notificarCancionLista(
++  pedidoId: string,
++  email: string,
++  destinatario: string,
++  urlEscuchar: string
++) {
++  try {
++    const { subject, html } = emailCancionLista({
++      destinatarioLabel: destinatario,
++      urlEscuchar,
++    });
++    await enviarEmail(email, subject, html);
++    console.log(`[pipeline] ✉️ Mail enviado a ${email} para ${pedidoId}`);
++  } catch (err: any) {
++    const mensaje = err?.message ?? "Error desconocido enviando mail";
++    console.error(`[pipeline] ✉️ Falló el mail de ${pedidoId} (la canción está lista igual):`, err);
+     await supabaseAdmin
+       .from("pedidos")
+-      .update({
+-        status: "error",
+-        error_message: mensaje.slice(0, 1000),
+-      })
++      .update({ error_message: `EMAIL: ${mensaje}`.slice(0, 1000) })
+       .eq("id", pedidoId);
+   }
+ }
+ 
++/**
++ * Marca un pedido como "error", pero SOLO si todavía está en "generando".
++ * Nunca pisa un pedido "listo" o "pagado": si ya hay canción, hay canción.
++ */
++export async function marcarError(pedidoId: string, mensaje: string) {
++  const { error } = await supabaseAdmin
++    .from("pedidos")
++    .update({
++      status: "error",
++      error_message: mensaje.slice(0, 1000),
++    })
++    .eq("id", pedidoId)
++    .eq("status", "generando");
++
++  if (error) {
++    console.error(`[pipeline] No se pudo marcar error en ${pedidoId}:`, error);
++  }
++}
++
+ async function getPedido(pedidoId: string): Promise<Pedido> {
+   const { data, error } = await supabaseAdmin
+     .from("pedidos")
