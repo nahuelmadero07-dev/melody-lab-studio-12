@@ -7,9 +7,20 @@ fal.config({
 
 const LYRIA_ENDPOINT = "fal-ai/lyria3/pro";
 
-// La letra va DENTRO del prompt. Un tope evita que un pedido con una historia
-// enorme genere un prompt que Lyria rechace.
-const MAX_CARACTERES_LETRA = 2500;
+// La letra va DENTRO del prompt. Tope prudente: fal/Lyria devuelven 422 si el
+// texto se pasa de largo. Se corta en el último salto de línea antes del tope
+// para no dejar un verso a la mitad.
+const MAX_CARACTERES_LETRA = 1800;
+const MAX_CARACTERES_HISTORIA = 400;
+
+/**
+ * "letra": Lyria canta la letra que escribió Gemini (modo normal).
+ * "tema":  plan B. Si fal rechaza la letra exacta (422), le describimos la
+ *          historia y los nombres y dejamos que Lyria escriba la letra.
+ *          Menos fiel, pero el cliente recibe una canción sobre ellos en vez
+ *          de un error.
+ */
+export type ModoPrompt = "letra" | "tema";
 
 export type CancionEnCola = {
   requestId: string;
@@ -19,21 +30,18 @@ export type CancionEnCola = {
  * Encola una canción en fal.ai y devuelve el request_id inmediatamente.
  * NO espera a que termine. fal.ai llamará al webhook cuando esté listo.
  *
- * IMPORTANTE (verificado contra la doc oficial de fal.ai, sep 2026):
- * el endpoint fal-ai/lyria3/pro acepta SOLO dos campos de entrada:
- *   - prompt (obligatorio)
- *   - image_url (opcional)
- * NO existen los campos "lyrics", "duration_seconds" ni "seed". fal los ignoraba
- * en silencio, así que la letra que escribía Gemini nunca llegaba al modelo y
- * Lyria inventaba una letra genérica. La canción no tenía los nombres ni la
- * historia del cliente. Ahora la letra viaja dentro del prompt.
+ * Verificado contra la doc oficial de fal.ai (sep 2026): el endpoint
+ * fal-ai/lyria3/pro acepta SOLO "prompt" (y opcionalmente "image_url").
+ * No existen "lyrics", "duration_seconds" ni "seed": la letra viaja en el prompt,
+ * con el formato que recomienda Google ("Lyrics:" + secciones [Verse]/[Chorus]).
  */
 export async function encolarCancion(
   pedido: Pedido,
   variante: "A" | "B",
-  webhookUrl: string
+  webhookUrl: string,
+  modo: ModoPrompt = "letra"
 ): Promise<CancionEnCola> {
-  const prompt = construirPromptMusical(pedido, variante);
+  const prompt = construirPromptMusical(pedido, variante, modo);
 
   const { request_id } = await fal.queue.submit(LYRIA_ENDPOINT, {
     input: { prompt },
@@ -45,7 +53,6 @@ export async function encolarCancion(
 
 /**
  * Trae el resultado FINAL de un request ya completado (lo usa el webhook).
- * fal.ai avisa "ya terminó", nosotros vamos a buscar el resultado.
  */
 export async function obtenerResultado(requestId: string): Promise<string> {
   const result: any = await fal.queue.result(LYRIA_ENDPOINT, {
@@ -67,12 +74,16 @@ export async function obtenerResultado(requestId: string): Promise<string> {
   return audioUrl;
 }
 
-function construirPromptMusical(pedido: Pedido, variante: "A" | "B"): string {
+function construirPromptMusical(
+  pedido: Pedido,
+  variante: "A" | "B",
+  modo: ModoPrompt
+): string {
   const voz =
     pedido.voz.toLowerCase().includes("masculina") ||
     (pedido.voz.toLowerCase().includes("las dos") && variante === "A")
-      ? "male lead vocal"
-      : "female lead vocal";
+      ? "a warm male lead vocal"
+      : "a warm female lead vocal";
 
   const estiloIngles = traducirEstilo(pedido.estilo);
   const climaIngles = traducirClima(pedido.clima);
@@ -82,36 +93,44 @@ function construirPromptMusical(pedido: Pedido, variante: "A" | "B"): string {
       ? "Warm acoustic arrangement, intimate feel, sparse instrumentation."
       : "Richer full-band arrangement, cinematic build, layered instrumentation.";
 
-  const letra = prepararLetra(pedido.letra ?? "");
+  const descripcion =
+    `${estiloIngles} song with ${voz} singing in Spanish. ${climaIngles} mood. ` +
+    `${variacion} Professional studio production, clear and emotive vocals. ` +
+    `Full-length song, around 2 to 3 minutes, with verses, chorus and bridge.`;
 
-  return [
-    `${estiloIngles} song sung in Spanish, ${climaIngles} mood, ${voz}.`,
-    variacion,
-    `Professional studio production, clear and emotive vocals, around 2 to 3 minutes long.`,
-    `A personal gift song for a special occasion (${pedido.ocasion.toLowerCase()}), dedicated to ${pedido.destinatario}.`,
-    ``,
-    `Sing exactly these lyrics, in Spanish, without changing the words or the names:`,
-    ``,
-    letra,
-  ].join("\n");
+  if (modo === "tema") {
+    const historia = recortar(pedido.historia ?? "", MAX_CARACTERES_HISTORIA);
+    return (
+      `${descripcion} ` +
+      `Song lyrics in Spanish, written as a personal gift from ${pedido.tu_nombre} ` +
+      `to ${pedido.destinatario} (${pedido.relacion.toLowerCase()}) for ${pedido.ocasion.toLowerCase()}. ` +
+      `The lyrics must mention ${pedido.destinatario} by name and be about this story: ${historia}`
+    );
+  }
+
+  const letra = prepararLetra(pedido.letra ?? "");
+  return `${descripcion}\n\nLyrics:\n${letra}`;
 }
 
 /**
- * Convierte las marcas de sección en español que escribe Gemini al formato
- * inglés que entienden los modelos de música, y recorta si es muy larga.
+ * Convierte las marcas de sección en español que escribe Gemini a las que
+ * documenta Google ([Verse 1], [Chorus], [Bridge]) y recorta si es muy larga.
  */
 function prepararLetra(letra: string): string {
   const convertida = letra
     .replace(/\[Verso\s*(\d+)\]/gi, "[Verse $1]")
-    .replace(/\[Coro final\]/gi, "[Final Chorus]")
+    .replace(/\[Coro final\]/gi, "[Chorus]")
     .replace(/\[Coro\]/gi, "[Chorus]")
     .replace(/\[Puente\]/gi, "[Bridge]")
-    .replace(/\[Outro\]/gi, "[Outro]")
     .trim();
 
-  return convertida.length > MAX_CARACTERES_LETRA
-    ? convertida.slice(0, MAX_CARACTERES_LETRA)
-    : convertida;
+  return recortar(convertida, MAX_CARACTERES_LETRA);
+}
+
+function recortar(texto: string, max: number): string {
+  if (texto.length <= max) return texto;
+  const corte = texto.lastIndexOf("\n", max);
+  return texto.slice(0, corte > max * 0.6 ? corte : max).trim();
 }
 
 function traducirEstilo(estilo: string): string {
@@ -128,10 +147,10 @@ function traducirEstilo(estilo: string): string {
 
 function traducirClima(clima: string): string {
   const map: Record<string, string> = {
-    Romántico: "romantic and tender",
-    Alegre: "joyful and uplifting",
-    Melancólico: "melancholic and nostalgic",
-    Festivo: "festive and celebratory",
+    Romántico: "Romantic and tender",
+    Alegre: "Joyful and uplifting",
+    Melancólico: "Melancholic and nostalgic",
+    Festivo: "Festive and celebratory",
   };
-  return map[clima] ?? "emotive";
+  return map[clima] ?? "Emotive";
 }

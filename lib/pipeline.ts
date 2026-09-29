@@ -147,6 +147,49 @@ async function notificarCancionLista(
 }
 
 /**
+ * PLAN B: fal.ai rechazó la canción con la letra exacta (típicamente un 422 por
+ * texto largo o filtro de contenido). Volvemos a encolar la MISMA variante, pero
+ * describiéndole la historia y los nombres para que Lyria escriba la letra.
+ * El webhook de este segundo intento llega con la variante marcada ("A2"/"B2"),
+ * y si ese también falla, ahí sí el pedido pasa a "error".
+ */
+export async function reencolarSinLetra(
+  pedidoId: string,
+  variante: "A" | "B",
+  baseUrl: string,
+  motivo: string
+) {
+  try {
+    const pedido = await getPedido(pedidoId);
+    if (pedido.status !== "generando") {
+      console.log(`[pipeline] ${pedidoId} ya no está en generando, no se reencola ${variante}`);
+      return;
+    }
+
+    const webhook = `${baseUrl}/api/fal-webhook/${pedidoId}/${variante}2`;
+    const cola = await encolarCancion(pedido, variante, webhook, "tema");
+
+    const campo = variante === "A" ? "fal_request_id_a" : "fal_request_id_b";
+    await supabaseAdmin
+      .from("pedidos")
+      .update({
+        [campo]: cola.requestId,
+        error_message: `AVISO variante ${variante}: fal.ai rechazó la letra exacta (${motivo.slice(
+          0,
+          300
+        )}). Se regeneró con letra libre basada en la historia.`.slice(0, 1000),
+      })
+      .eq("id", pedidoId);
+
+    console.log(`[pipeline] ${pedidoId} variante ${variante} reencolada en modo tema`);
+  } catch (err: any) {
+    const mensaje = err?.message ?? "Error desconocido al reencolar";
+    console.error(`reencolarSinLetra ${variante} falló para ${pedidoId}:`, err);
+    await marcarError(pedidoId, `Variante ${variante} (plan B): ${mensaje}`);
+  }
+}
+
+/**
  * Marca un pedido como "error", pero SOLO si todavía está en "generando".
  * Nunca pisa un pedido "listo" o "pagado": si ya hay canción, hay canción.
  */
