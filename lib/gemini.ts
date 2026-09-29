@@ -6,8 +6,8 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 // Modelos ordenados de más rápido/nuevo a más estable/lento
 // Los alias "latest" los mantiene Google apuntando a la versión más nueva
 const MODELOS_FALLBACK = [
+  "gemini-3.8-flash",
   "gemini-flash-latest",
-  "gemini-2.5-flash",
   "gemini-2.0-flash",
   "gemini-pro-latest",
 ];
