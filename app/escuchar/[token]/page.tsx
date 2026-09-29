@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { unstable_noStore as noStore } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { firmarUrlsPedido } from "@/lib/pipeline";
 import type { Pedido } from "@/types";
@@ -7,6 +8,7 @@ import { ReproductorSnippet, ReproductorCompleto, BotonComprar, AutoRefresh } fr
 // Siempre leemos el estado fresco de Supabase (generando → listo → pagado).
 // El refresco del lado del cliente lo hace <AutoRefresh /> mientras está generando.
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function EscucharPage({
   params,
@@ -26,8 +28,14 @@ export default async function EscucharPage({
     );
   }
 
-  /* ------- ESTADO: GENERANDO ------- */
-  if (pedido.status === "generando") {
+  // La fuente de verdad son los ARCHIVOS DE AUDIO, no la etiqueta de estado.
+  // Si las dos versiones ya existen, la canción está lista y se muestra,
+  // aunque el estado haya quedado mal grabado (pasó con versiones viejas del
+  // sitio que dejaban pedidos con audio pero estado "generando").
+  const tieneAudios = Boolean(pedido.url_a && pedido.url_b);
+
+  /* ------- ESTADO: GENERANDO (y sin audios todavía) ------- */
+  if (pedido.status === "generando" && !tieneAudios) {
     return (
       <Mensaje
         titulo={`Componiendo la canción para ${pedido.destinatario}...`}
@@ -48,8 +56,8 @@ export default async function EscucharPage({
     );
   }
 
-  /* ------- ESTADO: ERROR ------- */
-  if (pedido.status === "error") {
+  /* ------- ESTADO: ERROR (y sin audios que mostrar) ------- */
+  if (pedido.status === "error" && !tieneAudios) {
     return (
       <Mensaje
         titulo="Algo salió mal generando tu canción"
@@ -198,6 +206,8 @@ function Mensaje({
 }
 
 async function getPedido(token: string): Promise<Pedido | null> {
+  // Refuerzo anti-caché: le declara a Next que esta lectura JAMÁS se guarda.
+  noStore();
   const { data } = await supabaseAdmin
     .from("pedidos")
     .select("*")
