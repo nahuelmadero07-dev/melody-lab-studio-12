@@ -6,9 +6,12 @@ import { BASE_URL } from "@/lib/config";
 import type { NuevoPedido } from "@/types";
 
 export const runtime = "nodejs";
-// La cadena de fallbacks de Gemini puede tardar hasta ~30s si Google está
-// saturado. waitUntil() corre después de responder, pero sigue atado a este límite.
-export const maxDuration = 60;
+// Cuando Google está saturado, cada rechazo puede tardar decenas de segundos.
+// La cadena de fallbacks de Gemini se limita sola a 150s, pero este tope tiene
+// que ser holgado: si Vercel mata la función antes, el pedido queda en
+// "generando" para siempre sin llegar a anotar el error. 300 es el máximo del
+// plan Hobby.
+export const maxDuration = 300;
 
 // Cada pedido cuesta ~US$0,16 en fal.ai. Sin este freno, cualquiera puede
 // dejarte sin saldo en una tarde apretando "enviar".
