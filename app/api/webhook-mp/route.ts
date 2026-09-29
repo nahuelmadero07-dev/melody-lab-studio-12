@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { consultarPago, verificarFirmaWebhook } from "@/lib/mercadopago";
 import { enviarEmail } from "@/lib/resend";
 import { emailPagoConfirmado } from "@/lib/emails";
+import { BASE_URL } from "@/lib/config";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -81,8 +82,7 @@ export async function POST(req: NextRequest) {
       .eq("id", pedido.id);
 
     // Mandamos email de confirmación
-    const baseUrl = getBaseUrl(req);
-    const urlEscuchar = `${baseUrl}/escuchar/${token}`;
+    const urlEscuchar = `${BASE_URL}/escuchar/${token}`;
     const { subject, html } = emailPagoConfirmado({
       destinatarioLabel: pedido.destinatario,
       urlEscuchar,
@@ -103,9 +103,3 @@ export async function GET() {
   return NextResponse.json({ ok: true, endpoint: "webhook-mp" });
 }
 
-function getBaseUrl(req: NextRequest): string {
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  const proto = req.headers.get("x-forwarded-proto") ?? "http";
-  const host = req.headers.get("host") ?? "localhost:3000";
-  return `${proto}://${host}`;
-}

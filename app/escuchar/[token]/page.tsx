@@ -2,10 +2,11 @@ import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase";
 import { firmarUrlsPedido } from "@/lib/pipeline";
 import type { Pedido } from "@/types";
-import { ReproductorSnippet, ReproductorCompleto, BotonComprar } from "./client";
+import { ReproductorSnippet, ReproductorCompleto, BotonComprar, AutoRefresh } from "./client";
 
-// Revalidamos cada 5s porque el estado del pedido cambia (generando → listo → pagado)
-export const revalidate = 5;
+// Siempre leemos el estado fresco de Supabase (generando → listo → pagado).
+// El refresco del lado del cliente lo hace <AutoRefresh /> mientras está generando.
+export const dynamic = "force-dynamic";
 
 export default async function EscucharPage({
   params,
@@ -32,6 +33,7 @@ export default async function EscucharPage({
         titulo={`Componiendo la canción para ${pedido.destinatario}...`}
         subtitulo="Tarda entre 2 y 3 minutos. Podés dejar esta pestaña abierta — se actualiza sola. También te vamos a mandar un email cuando esté lista."
       >
+        <AutoRefresh cadaMs={8000} />
         <div className="mt-10 flex items-center gap-3 text-parchment-muted">
           <div className="flex gap-1">
             <span className="h-2 w-2 animate-bounce rounded-full bg-gold [animation-delay:-0.3s]" />

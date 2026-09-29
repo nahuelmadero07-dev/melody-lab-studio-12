@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { supabaseAdmin } from "@/lib/supabase";
 import { arrancarPipeline } from "@/lib/pipeline";
+import { BASE_URL } from "@/lib/config";
 import type { NuevoPedido } from "@/types";
 
 export const runtime = "nodejs";
+// La cadena de fallbacks de Gemini puede tardar hasta ~30s si Google está
+// saturado. waitUntil() corre después de responder, pero sigue atado a este límite.
+export const maxDuration = 60;
 
-// URL FIJA de producción — no usamos VERCEL_URL porque devuelve la URL del deploy
-// específico (larga y efímera), y fal.ai puede no llegar cuando el webhook responda tarde.
-const BASE_URL_PRODUCCION = "https://melody-lab-studio-k1wf.vercel.app";
+// Cada pedido cuesta ~US$0,16 en fal.ai. Sin este freno, cualquiera puede
+// dejarte sin saldo en una tarde apretando "enviar".
+const MAX_PEDIDOS_POR_EMAIL_POR_HORA = 3;
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,6 +23,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { ok: false, error: errores.join(". ") },
         { status: 400 }
+      );
+    }
+
+    const email = body.email.trim().toLowerCase();
+
+    // Anti-abuso básico por email (no frena a alguien con mails infinitos,
+    // pero sí al 95% de los curiosos y al botón apretado 10 veces).
+    const haceUnaHora = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count } = await supabaseAdmin
+      .from("pedidos")
+      .select("id", { count: "exact", head: true })
+      .eq("email", email)
+      .gte("created_at", haceUnaHora);
+
+    if ((count ?? 0) >= MAX_PEDIDOS_POR_EMAIL_POR_HORA) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "Ya tenés varias canciones en proceso con este email. Esperá un rato y probá de nuevo.",
+        },
+        { status: 429 }
       );
     }
 
@@ -33,7 +59,7 @@ export async function POST(req: NextRequest) {
         estilo: body.estilo,
         clima: body.clima,
         voz: body.voz,
-        email: body.email,
+        email,
         whatsapp: body.whatsapp || null,
         status: "generando",
         plan: "estandar",
@@ -50,8 +76,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Arrancamos el pipeline en background con la URL de producción estable
-    waitUntil(arrancarPipeline(data.id, BASE_URL_PRODUCCION));
+    // Arrancamos el pipeline en background con la URL pública estable
+    waitUntil(arrancarPipeline(data.id, BASE_URL));
 
     return NextResponse.json({
       ok: true,
@@ -74,6 +100,7 @@ function validarPayload(b: any): string[] {
   if (!b.destinatario || b.destinatario.length < 2) e.push("Falta nombre del destinatario");
   if (!b.relacion) e.push("Falta relación");
   if (!b.historia || b.historia.length < 20) e.push("Historia muy corta");
+  if (b.historia && b.historia.length > 3000) e.push("Historia demasiado larga (máx. 3000 caracteres)");
   if (!b.estilo) e.push("Falta estilo");
   if (!b.clima) e.push("Falta clima");
   if (!b.voz) e.push("Falta voz");

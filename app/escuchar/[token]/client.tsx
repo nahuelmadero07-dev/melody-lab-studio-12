@@ -1,6 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+
+/**
+ * Mientras el pedido está "generando", vuelve a pedir la página al servidor
+ * cada N segundos. Sin esto, el texto "esta página se actualiza sola" era
+ * mentira: `revalidate` solo regenera el HTML en el servidor, el navegador
+ * del cliente no se entera de nada hasta que apreta F5.
+ */
+export function AutoRefresh({ cadaMs = 8000 }: { cadaMs?: number }) {
+  const router = useRouter();
+  useEffect(() => {
+    const id = setInterval(() => router.refresh(), cadaMs);
+    return () => clearInterval(id);
+  }, [router, cadaMs]);
+  return null;
+}
 
 /**
  * Reproductor de "adelanto" — permite escuchar solo los primeros 30 segundos.

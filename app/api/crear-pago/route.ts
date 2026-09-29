@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { crearLinkPago } from "@/lib/mercadopago";
+import { BASE_URL } from "@/lib/config";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -39,12 +40,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const baseUrl = getBaseUrl(req);
+    // BASE_URL fija: las back_urls y la notification_url de Mercado Pago tienen
+    // que apuntar al dominio público, no al deploy efímero de VERCEL_URL.
     const initPoint = await crearLinkPago({
       token: pedido.token,
       destinatario: pedido.destinatario,
       monto: pedido.monto ?? 9.9,
-      baseUrl,
+      baseUrl: BASE_URL,
     });
 
     return NextResponse.json({ ok: true, url: initPoint });
@@ -57,9 +59,3 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function getBaseUrl(req: NextRequest): string {
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  const proto = req.headers.get("x-forwarded-proto") ?? "http";
-  const host = req.headers.get("host") ?? "localhost:3000";
-  return `${proto}://${host}`;
-}

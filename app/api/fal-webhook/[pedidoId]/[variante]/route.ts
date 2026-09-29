@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
-import { finalizarVariante } from "@/lib/pipeline";
+import { finalizarVariante, marcarError } from "@/lib/pipeline";
+import { BASE_URL } from "@/lib/config";
 
 export const runtime = "nodejs";
-
-const BASE_URL_PRODUCCION = "https://melody-lab-studio-k1wf.vercel.app";
+// Descargar un MP3 de ~2,5 min de fal y subirlo a B2 puede llevar 10-20s.
+export const maxDuration = 60;
 
 /**
  * Este endpoint recibe el aviso de fal.ai cuando UNA canción terminó de generarse.
@@ -12,6 +13,8 @@ const BASE_URL_PRODUCCION = "https://melody-lab-studio-k1wf.vercel.app";
  *
  * Los datos vienen por el path (no por query params) porque fal.ai
  * rechaza URLs con query params.
+ *
+ * Payload de fal: { request_id, status: "OK" | "ERROR", payload, error, ... }
  */
 export async function POST(
   req: NextRequest,
@@ -32,7 +35,12 @@ export async function POST(
     console.log(`Webhook fal.ai — pedido ${pedidoId} variante ${variante} status ${status}`);
 
     if (status !== "OK" && status !== "COMPLETED") {
-      console.error("fal.ai reportó error:", JSON.stringify(body).slice(0, 500));
+      // Antes esto solo se logueaba y el pedido quedaba en "generando" PARA SIEMPRE:
+      // el cliente veía "componiendo..." eternamente y nunca recibía nada.
+      const detalle =
+        body?.error ?? body?.payload_error ?? JSON.stringify(body ?? {}).slice(0, 400);
+      console.error("fal.ai reportó error:", detalle);
+      await marcarError(pedidoId, `fal.ai variante ${variante}: ${detalle}`);
       return NextResponse.json({ ok: true });
     }
 
@@ -40,7 +48,7 @@ export async function POST(
       return NextResponse.json({ ok: false, error: "Sin request_id" }, { status: 400 });
     }
 
-    waitUntil(finalizarVariante(pedidoId, variante as "A" | "B", requestId, BASE_URL_PRODUCCION));
+    waitUntil(finalizarVariante(pedidoId, variante as "A" | "B", requestId, BASE_URL));
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {

@@ -14,7 +14,7 @@ export async function arrancarPipeline(pedidoId: string, baseUrl: string) {
   try {
     const pedido = await getPedido(pedidoId);
 
-    // 1. Letra (Gemini responde en 2-5 segundos)
+    // 1. Letra (Gemini responde en 2-5 segundos; con fallbacks puede llegar a ~30s)
     const letra = await generarLetra(pedido);
     pedido.letra = letra;
     await supabaseAdmin.from("pedidos").update({ letra }).eq("id", pedidoId);
@@ -39,19 +39,16 @@ export async function arrancarPipeline(pedidoId: string, baseUrl: string) {
   } catch (err: any) {
     const mensaje = err?.message ?? "Error desconocido al arrancar";
     console.error(`arrancarPipeline falló para ${pedidoId}:`, err);
-
-    await supabaseAdmin
-      .from("pedidos")
-      .update({
-        status: "error",
-        error_message: mensaje.slice(0, 1000),
-      })
-      .eq("id", pedidoId);
+    await marcarError(pedidoId, mensaje);
   }
 }
 
 /**
  * PASO 2 DEL PIPELINE: procesa el resultado de UNA variante cuando fal.ai avisa.
+ *
+ * Las dos variantes (A y B) pueden terminar al mismo tiempo, así que este código
+ * corre dos veces en paralelo. Todo lo que pasa después de guardar la URL tiene
+ * que ser idempotente: solo UNA de las dos ejecuciones marca "listo" y manda el mail.
  */
 export async function finalizarVariante(
   pedidoId: string,
@@ -78,34 +75,93 @@ export async function finalizarVariante(
       })
       .eq("id", pedidoId);
 
-    const pedidoActualizado = await getPedido(pedidoId);
-    if (pedidoActualizado.url_a && pedidoActualizado.url_b) {
-      await supabaseAdmin
-        .from("pedidos")
-        .update({
-          status: "listo",
-          delivered_at: new Date().toISOString(),
-        })
-        .eq("id", pedidoId);
+    // Transición ATÓMICA generando → listo.
+    // El UPDATE solo afecta la fila si sigue en "generando" y ya tiene las dos URLs.
+    // Si A y B llegan a la vez, la base garantiza que una sola de las dos ve
+    // `listos.length === 1`; la otra ve 0 y no manda mail duplicado.
+    const { data: listos, error: errListo } = await supabaseAdmin
+      .from("pedidos")
+      .update({
+        status: "listo",
+        delivered_at: new Date().toISOString(),
+      })
+      .eq("id", pedidoId)
+      .eq("status", "generando")
+      .not("url_a", "is", null)
+      .not("url_b", "is", null)
+      .select("id, email, destinatario, token");
 
-      const urlEscuchar = `${baseUrl}/escuchar/${pedidoActualizado.token}`;
-      const { subject, html } = emailCancionLista({
-        destinatarioLabel: pedidoActualizado.destinatario,
-        urlEscuchar,
-      });
-      await enviarEmail(pedidoActualizado.email, subject, html);
+    if (errListo) {
+      throw new Error(`Supabase al marcar listo: ${errListo.message}`);
     }
+
+    if (!listos || listos.length === 0) {
+      // Falta la otra variante todavía, o la otra ejecución ya marcó "listo".
+      console.log(`[pipeline] ${pedidoId} variante ${variante} guardada; esperando la otra`);
+      return;
+    }
+
+    const listo = listos[0];
+    await notificarCancionLista(
+      pedidoId,
+      listo.email,
+      listo.destinatario,
+      `${baseUrl}/escuchar/${listo.token}`
+    );
   } catch (err: any) {
     const mensaje = err?.message ?? "Error desconocido en finalización";
     console.error(`finalizarVariante ${variante} falló para ${pedidoId}:`, err);
+    await marcarError(pedidoId, `Variante ${variante}: ${mensaje}`);
+  }
+}
 
+/**
+ * Manda el mail de "tu canción está lista".
+ *
+ * IMPORTANTE: acá la canción YA está generada, subida y el pedido YA está en
+ * "listo". Si Resend falla (por ejemplo, porque todavía usás onboarding@resend.dev
+ * que solo entrega a tu propio mail), el pedido NO se va a "error": el cliente
+ * igual puede escucharla entrando a /escuchar/{token}. Solo dejamos registro.
+ */
+async function notificarCancionLista(
+  pedidoId: string,
+  email: string,
+  destinatario: string,
+  urlEscuchar: string
+) {
+  try {
+    const { subject, html } = emailCancionLista({
+      destinatarioLabel: destinatario,
+      urlEscuchar,
+    });
+    await enviarEmail(email, subject, html);
+    console.log(`[pipeline] ✉️ Mail enviado a ${email} para ${pedidoId}`);
+  } catch (err: any) {
+    const mensaje = err?.message ?? "Error desconocido enviando mail";
+    console.error(`[pipeline] ✉️ Falló el mail de ${pedidoId} (la canción está lista igual):`, err);
     await supabaseAdmin
       .from("pedidos")
-      .update({
-        status: "error",
-        error_message: mensaje.slice(0, 1000),
-      })
+      .update({ error_message: `EMAIL: ${mensaje}`.slice(0, 1000) })
       .eq("id", pedidoId);
+  }
+}
+
+/**
+ * Marca un pedido como "error", pero SOLO si todavía está en "generando".
+ * Nunca pisa un pedido "listo" o "pagado": si ya hay canción, hay canción.
+ */
+export async function marcarError(pedidoId: string, mensaje: string) {
+  const { error } = await supabaseAdmin
+    .from("pedidos")
+    .update({
+      status: "error",
+      error_message: mensaje.slice(0, 1000),
+    })
+    .eq("id", pedidoId)
+    .eq("status", "generando");
+
+  if (error) {
+    console.error(`[pipeline] No se pudo marcar error en ${pedidoId}:`, error);
   }
 }
 
