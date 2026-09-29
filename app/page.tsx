@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PRECIO_LABEL } from "@/lib/config";
 
 export default function Home() {
   return (
@@ -56,7 +57,7 @@ export default function Home() {
                   </svg>
                 </Link>
                 <p className="text-sm text-parchment-dim">
-                  Demo gratis · Solo pagás si te gusta · Desde $9,90
+                  Demo gratis · Solo pagás si te gusta · {PRECIO_LABEL}
                 </p>
               </div>
             </div>
@@ -93,7 +94,7 @@ export default function Home() {
             <Step
               n="03"
               title="Escuchás y decidís"
-              body="Te mandamos un adelanto de 30 segundos por email o WhatsApp. Si te emociona, desbloqueás la canción completa por $9,90."
+              body={`Te mandamos un adelanto de 30 segundos por email o WhatsApp. Si te emociona, desbloqueás la canción completa por ${PRECIO_LABEL}.`}
             />
           </ol>
         </div>

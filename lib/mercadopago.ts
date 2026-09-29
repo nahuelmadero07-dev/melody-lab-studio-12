@@ -88,7 +88,7 @@ export function verificarFirmaWebhook(args: {
   xRequestId: string | null;
   dataId: string; // El id del pago (viene en la query o el body)
 }): boolean {
-  const secret = process.env.MP_WEBHOOK_SECRET;
+  const secret = process.env.MP_WEBHOOK_SECRET?.trim();
   if (!secret) return true; // Si no está configurado (dev), skipeamos
 
   if (!args.xSignature || !args.xRequestId) return false;
@@ -101,7 +101,8 @@ export function verificarFirmaWebhook(args: {
   if (!tsPart || !v1Part) return false;
 
   // Template a firmar según MP: "id:<data.id>;request-id:<x-request-id>;ts:<ts>;"
-  const template = `id:${args.dataId};request-id:${args.xRequestId};ts:${tsPart};`;
+  // MP exige el data.id en minúsculas si es alfanumérico (si es numérico no cambia nada)
+  const template = `id:${args.dataId.toLowerCase()};request-id:${args.xRequestId};ts:${tsPart};`;
   const hmac = crypto.createHmac("sha256", secret);
   hmac.update(template);
   const hashCalculado = hmac.digest("hex");

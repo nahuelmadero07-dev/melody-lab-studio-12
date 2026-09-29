@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { supabaseAdmin } from "@/lib/supabase";
 import { arrancarPipeline } from "@/lib/pipeline";
-import { BASE_URL } from "@/lib/config";
+import { BASE_URL, PRECIO_ARS } from "@/lib/config";
 import type { NuevoPedido } from "@/types";
 
 export const runtime = "nodejs";
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
         whatsapp: body.whatsapp || null,
         status: "generando",
         plan: "estandar",
-        monto: 9.9,
+        monto: PRECIO_ARS,
       })
       .select("id, token")
       .single();

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatearPrecio } from "@/lib/config";
 
 /**
  * Mientras el pedido está "generando", vuelve a pedir la página al servidor
@@ -188,7 +189,7 @@ export function BotonComprar({
         disabled={cargando}
         className="inline-flex items-center gap-3 rounded-full bg-gold px-7 py-4 font-medium text-night hover:bg-gold-soft disabled:opacity-50"
       >
-        {cargando ? "Redirigiendo..." : `Desbloquear canción completa — $${monto.toFixed(2).replace(".", ",")}`}
+        {cargando ? "Redirigiendo..." : `Desbloquear canción completa — ${formatearPrecio(monto)}`}
         {!cargando && (
           <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M4 10h12M11 5l5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />

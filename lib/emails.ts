@@ -3,6 +3,8 @@
  * Los emails HTML son quisquillosos — usamos solo estilos inline y tablas.
  */
 
+import { PRECIO_LABEL } from "@/lib/config";
+
 type EmailArgs = {
   destinatarioLabel: string; // el "para quién" de la canción, para personalizar
   urlEscuchar: string;
@@ -27,7 +29,7 @@ export function emailCancionLista(args: EmailArgs) {
       <p style="font-size:16px;color:${COLORS.muted};margin:0 0 32px 0;line-height:1.6">
         Preparamos dos versiones distintas para que elijas la que más te emocione.
         Podés escuchar un adelanto de cada una gratis. Si te gusta, desbloqueás la
-        canción completa (2 min y medio) por $9,90.
+        canción completa (2 min y medio) por ${PRECIO_LABEL}.
       </p>
       ${botonGold("Escuchar mi canción", args.urlEscuchar)}
       <p style="font-size:13px;color:${COLORS.muted};margin:32px 0 0 0;line-height:1.5">

@@ -14,3 +14,19 @@
 export const BASE_URL = (
   process.env.NEXT_PUBLIC_BASE_URL ?? "https://melody-lab-studio-k1wf.vercel.app"
 ).replace(/\/+$/, "");
+
+/**
+ * Precio de la canción completa, en pesos argentinos (ARS).
+ * Es el ÚNICO lugar donde se define: se usa para cobrar en Mercado Pago,
+ * para guardar el monto del pedido y para mostrarlo en la web y en los mails.
+ */
+export const PRECIO_ARS = 7990;
+
+/** Formatea un monto como "$7.990" (formato argentino, sin decimales). */
+export function formatearPrecio(monto: number): string {
+  const entero = Math.round(monto).toString();
+  return `$${entero.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+}
+
+/** Precio listo para mostrar: "$7.990" */
+export const PRECIO_LABEL = formatearPrecio(PRECIO_ARS);

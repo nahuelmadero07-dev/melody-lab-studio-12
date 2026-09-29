@@ -2,6 +2,7 @@ import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { firmarUrlsPedido } from "@/lib/pipeline";
+import { PRECIO_ARS } from "@/lib/config";
 import type { Pedido } from "@/types";
 import { ReproductorSnippet, ReproductorCompleto, BotonComprar, AutoRefresh } from "./client";
 
@@ -127,7 +128,7 @@ export default async function EscucharPage({
             como MP3 y regalar. Único pago, sin suscripción.
           </p>
           <div className="mt-6">
-            <BotonComprar token={pedido.token} monto={pedido.monto ?? 9.9} />
+            <BotonComprar token={pedido.token} monto={pedido.monto ?? PRECIO_ARS} />
           </div>
           <p className="mt-4 text-xs text-parchment-dim">
             Pago procesado por Mercado Pago. 7 días de garantía de devolución.

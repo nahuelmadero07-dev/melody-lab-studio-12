@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { PRECIO_LABEL } from "@/lib/config";
 
 type Formulario = {
   ocasion: string;
@@ -400,7 +401,7 @@ function StepFinal({
       </div>
 
       <p className="mt-8 rounded-lg border border-parchment-muted/10 bg-night-soft/30 px-4 py-3 text-sm text-parchment-dim">
-        Escuchás el adelanto gratis. Solo pagás <span className="text-parchment">$9,90</span> si te
+        Escuchás el adelanto gratis. Solo pagás <span className="text-parchment">{PRECIO_LABEL}</span> si te
         emociona. Sin cargos ocultos ni suscripciones.
       </p>
     </div>

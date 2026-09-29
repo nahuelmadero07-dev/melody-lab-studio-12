@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { crearLinkPago } from "@/lib/mercadopago";
-import { BASE_URL } from "@/lib/config";
+import { BASE_URL, PRECIO_ARS } from "@/lib/config";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     const initPoint = await crearLinkPago({
       token: pedido.token,
       destinatario: pedido.destinatario,
-      monto: pedido.monto ?? 9.9,
+      monto: pedido.monto ?? PRECIO_ARS,
       baseUrl: BASE_URL,
     });
 
