@@ -266,10 +266,10 @@ function PlayerMockup() {
           <p className="text-sm text-parchment-dim">Estilo bolero · voz femenina</p>
         </div>
 
-        {/* Barra de progreso */}
-        <div className="mb-3 h-1 overflow-hidden rounded-full bg-night-deep">
-          <div className="animate-progress h-full w-full bg-gradient-to-r from-gold-deep via-gold to-gold-soft" />
-        </div>
+             {/* Barra de progreso — estática al 40% para coincidir con 0:12 / 0:30 */}
+      <div className="mb-3 h-1 overflow-hidden rounded-full bg-night-deep">
+        <div className="h-full w-[40%] bg-gradient-to-r from-gold-deep via-gold to-gold-soft" />
+      </div>
         <div className="mb-6 flex justify-between text-xs text-parchment-dim">
           <span>0:12</span>
           <span>0:30 — adelanto</span>
