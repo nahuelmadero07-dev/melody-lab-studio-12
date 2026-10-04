@@ -355,3 +355,135 @@ function PlayerMockup() {
     </div>
   );
 }
+
+/* ============ DATA ============ */
+
+const occasions = [
+  {
+    title: "Aniversario",
+    sub: "El día que se conocieron, en forma de canción.",
+    icon: <IconHeart />,
+  },
+  {
+    title: "Cumpleaños",
+    sub: "Con su nombre cantado, no el genérico.",
+    icon: <IconCake />,
+  },
+  {
+    title: "Pedir perdón",
+    sub: "Cuando las palabras se quedan cortas.",
+    icon: <IconHand />,
+  },
+  {
+    title: "Homenaje",
+    sub: "Para recordar a quien ya no está.",
+    icon: <IconMoon />,
+  },
+  {
+    title: "Nacimiento",
+    sub: "La primera canción de su vida.",
+    icon: <IconStar />,
+  },
+  {
+    title: "Boda",
+    sub: "Su historia, contada en tres minutos.",
+    icon: <IconRing />,
+  },
+  {
+    title: "Amistad",
+    sub: "Para ese amigo que es familia.",
+    icon: <IconClink />,
+  },
+  {
+    title: "Solo porque sí",
+    sub: "El mejor motivo de todos.",
+    icon: <IconSpark />,
+  },
+];
+
+const faqs = [
+  {
+    q: "¿Cuánto tarda en llegar?",
+    a: "Entre 2 y 3 minutos. Te avisamos por email —y por WhatsApp si nos lo dejaste— cuando esté listo el adelanto.",
+  },
+  {
+    q: "¿Puedo elegir el estilo musical?",
+    a: "Sí. En el formulario elegís entre pop, balada, rock, reggaeton, bolero o mariachi. Si dudás, marcá el que mejor le pegue a la persona.",
+  },
+  {
+    q: "¿Y la voz? ¿Es masculina o femenina?",
+    a: "Vos elegís. También podés pedir que generemos dos versiones distintas, una de cada, y quedarte con la que más te guste.",
+  },
+  {
+    q: "¿Y si no me convence lo que sale?",
+    a: "Antes de pagar, escuchás un adelanto de 30 segundos de cada versión. Si no te emociona, no pagás. Y una vez pagado, tenés siete días de garantía de devolución.",
+  },
+  {
+    q: "¿Suena como algún cantante famoso?",
+    a: "No. La voz es sintética, generada con IA. No podemos imitar a artistas reales ni queremos: cada canción es única y no representa a nadie más que a la historia que nos contás.",
+  },
+  {
+    q: "¿Puedo descargar el MP3 para regalarlo?",
+    a: "Sí. Una vez desbloqueado, podés descargar los archivos MP3 y compartirlos por donde quieras: WhatsApp, mail, o poniéndolo a sonar en persona.",
+  },
+];
+
+/* ============ ICONOS (SVG inline, propios) ============ */
+
+function IconHeart() {
+  return (
+    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+function IconCake() {
+  return (
+    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M4 20h16M5 20V13a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7M12 11V6M9 6l3-3 3 3" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+function IconHand() {
+  return (
+    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M8 11V5a1.5 1.5 0 0 1 3 0v6M11 11V4a1.5 1.5 0 0 1 3 0v7M14 11V6a1.5 1.5 0 0 1 3 0v9a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5v-4a1.5 1.5 0 0 1 3 0" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+function IconMoon() {
+  return (
+    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M20 15.5A8 8 0 0 1 8.5 4a8 8 0 1 0 11.5 11.5z" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+function IconStar() {
+  return (
+    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M12 3l2.5 6 6.5.5-5 4.5 1.5 6.5L12 17l-5.5 3.5L8 14 3 9.5 9.5 9 12 3z" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+function IconRing() {
+  return (
+    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="12" cy="15" r="6"/>
+      <path d="M9 6l3-3 3 3-3 3-3-3z" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+function IconClink() {
+  return (
+    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M6 4l3 9-3 6M18 4l-3 9 3 6M9 13h6" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+function IconSpark() {
+  return (
+    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l3 3M15 15l3 3M6 18l3-3M15 9l3-3" strokeLinecap="round"/>
+    </svg>
+  );
+}
