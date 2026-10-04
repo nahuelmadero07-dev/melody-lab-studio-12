@@ -57,13 +57,13 @@ body::before {
   }
 }
 
-/* Animación única del hero: pulso lento del disco del reproductor */
+/* Animación única del hero: giro muy lento del disco del reproductor */
 @keyframes spin-slow {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
 .animate-spin-slow {
-  animation: spin-slow 24s linear infinite;
+  animation: spin-slow 40s linear infinite;
 }
 
 /* Barra de progreso animada del mockup */
