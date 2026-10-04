@@ -57,24 +57,14 @@ body::before {
   }
 }
 
-/* Animación única del hero: giro muy lento del disco del reproductor */
+/* Giro lento del disco — solo cuando está sonando */
 @keyframes spin-slow {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
 .animate-spin-slow {
-  animation: spin-slow 40s linear infinite;
+  animation: spin-slow 20s linear infinite;
 }
-
-/* Barra de progreso animada del mockup */
-@keyframes progress-wave {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(0%); }
-}
-.animate-progress {
-  animation: progress-wave 6s ease-in-out infinite alternate;
-}
-
 /* Scrollbar discreto */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: #0F0B1A; }
