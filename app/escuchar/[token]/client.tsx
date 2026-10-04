@@ -175,6 +175,12 @@ export function BotonComprar({
       });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error ?? "Error creando el pago");
+     if (typeof window !== "undefined" && (window as any).fbq) {
+  (window as any).fbq("track", "InitiateCheckout", {
+    value: monto,
+    currency: "ARS",
+  });
+}
       window.location.href = json.url;
     } catch (e: any) {
       setError(e.message);
