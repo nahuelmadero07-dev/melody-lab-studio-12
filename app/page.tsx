@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { PRECIO_LABEL } from "@/lib/config";
 
