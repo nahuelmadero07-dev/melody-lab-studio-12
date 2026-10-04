@@ -8,28 +8,94 @@ import { BASE_URL } from "@/lib/config";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
+async function enviarPurchaseMeta(args: {
+  paymentId: string;
+  monto: number;
+  email?: string | null;
+}) {
+  const accessToken = process.env.META_CAPI_ACCESS_TOKEN;
+  const pixelId = "1423641575865360";
+
+  if (!accessToken) {
+    console.warn("Falta META_CAPI_ACCESS_TOKEN");
+    return;
+  }
+
+  const crypto = await import("crypto");
+
+  const emailHash = args.email
+    ? crypto
+        .createHash("sha256")
+        .update(args.email.trim().toLowerCase())
+        .digest("hex")
+    : undefined;
+
+  const event = {
+    data: [
+      {
+        event_name: "Purchase",
+        event_time: Math.floor(Date.now() / 1000),
+        event_id: `mp_${args.paymentId}`,
+        action_source: "website",
+        event_source_url: `${BASE_URL}/`,
+        user_data: {
+          ...(emailHash ? { em: [emailHash] } : {}),
+        },
+        custom_data: {
+          currency: "ARS",
+          value: args.monto,
+        },
+      },
+    ],
+  };
+
+  const res = await fetch(
+    `https://graph.facebook.com/v21.0/${pixelId}/events?access_token=${encodeURIComponent(
+      accessToken
+    )}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(event),
+    }
+  );
+
+  const json = await res.json();
+
+  if (!res.ok) {
+    console.error("Error enviando Purchase a Meta:", json);
+    return;
+  }
+
+  console.log("Purchase enviado a Meta:", json);
+}
+
 export async function POST(req: NextRequest) {
   try {
-    // MP puede mandar el id de pago por query o por body — cubrimos ambos casos
     const url = new URL(req.url);
-    const dataIdQuery = url.searchParams.get("data.id") ?? url.searchParams.get("id");
+
+    const dataIdQuery =
+      url.searchParams.get("data.id") ?? url.searchParams.get("id");
 
     let body: any = {};
+
     try {
       body = await req.json();
-    } catch {
-      // A veces MP manda GET o body vacío para ping — respondemos 200
-    }
+    } catch {}
 
     const dataId = dataIdQuery ?? body?.data?.id ?? body?.id;
-    const tipo = url.searchParams.get("type") ?? body?.type ?? body?.topic;
+    const tipo =
+      url.searchParams.get("type") ?? body?.type ?? body?.topic;
 
-    // Solo procesamos notificaciones de tipo 'payment'
     if (tipo !== "payment" || !dataId) {
-      return NextResponse.json({ ok: true, note: "Notificación ignorada" });
+      return NextResponse.json({
+        ok: true,
+        note: "Notificación ignorada",
+      });
     }
 
-    // Verificamos la firma (evita que alguien externo dispare este endpoint fingiendo ser MP)
     const firmaOk = verificarFirmaWebhook({
       xSignature: req.headers.get("x-signature"),
       xRequestId: req.headers.get("x-request-id"),
@@ -37,39 +103,68 @@ export async function POST(req: NextRequest) {
     });
 
     if (!firmaOk) {
-      console.warn("Webhook con firma inválida:", { dataId });
-      return NextResponse.json({ ok: false, error: "Firma inválida" }, { status: 401 });
+      console.warn("Webhook con firma inválida:", {
+        dataId,
+      });
+
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Firma inválida",
+        },
+        {
+          status: 401,
+        }
+      );
     }
 
-    // Consultamos a MP los detalles reales del pago
     const pago = await consultarPago(String(dataId));
 
-    // Solo procesamos pagos aprobados
     if (pago.status !== "approved") {
-      return NextResponse.json({ ok: true, note: `Pago en estado ${pago.status}` });
+      return NextResponse.json({
+        ok: true,
+        note: `Pago en estado ${pago.status}`,
+      });
     }
 
-    // El external_reference es nuestro token
     const token = pago.externalReference;
+
     if (!token) {
-      return NextResponse.json({ ok: true, note: "Sin external_reference" });
+      return NextResponse.json({
+        ok: true,
+        note: "Sin external_reference",
+      });
     }
 
-    // Buscamos y actualizamos el pedido
-    const { data: pedido, error: errBusqueda } = await supabaseAdmin
-      .from("pedidos")
-      .select("id, email, destinatario, status, payment_id")
-      .eq("token", token)
-      .single();
+    const { data: pedido, error: errBusqueda } =
+      await supabaseAdmin
+        .from("pedidos")
+        .select(
+          "id, email, destinatario, status, payment_id"
+        )
+        .eq("token", token)
+        .single();
 
     if (errBusqueda || !pedido) {
-      console.error("Pedido no encontrado para webhook:", token);
-      return NextResponse.json({ ok: true, note: "Pedido no encontrado" });
+      console.error(
+        "Pedido no encontrado para webhook:",
+        token
+      );
+
+      return NextResponse.json({
+        ok: true,
+        note: "Pedido no encontrado",
+      });
     }
 
-    // Idempotencia: si ya está pagado y con este mismo payment_id, no hacemos nada
-    if (pedido.status === "pagado" && pedido.payment_id === String(dataId)) {
-      return NextResponse.json({ ok: true, note: "Ya procesado" });
+    if (
+      pedido.status === "pagado" &&
+      pedido.payment_id === String(dataId)
+    ) {
+      return NextResponse.json({
+        ok: true,
+        note: "Ya procesado",
+      });
     }
 
     await supabaseAdmin
@@ -81,25 +176,49 @@ export async function POST(req: NextRequest) {
       })
       .eq("id", pedido.id);
 
-    // Mandamos email de confirmación
+    await enviarPurchaseMeta({
+      paymentId: String(dataId),
+      monto: pago.monto,
+      email: pedido.email,
+    });
+
     const urlEscuchar = `${BASE_URL}/escuchar/${token}`;
+
     const { subject, html } = emailPagoConfirmado({
       destinatarioLabel: pedido.destinatario,
       urlEscuchar,
     });
-    await enviarEmail(pedido.email, subject, html);
 
-    return NextResponse.json({ ok: true });
+    await enviarEmail(
+      pedido.email,
+      subject,
+      html
+    );
+
+    return NextResponse.json({
+      ok: true,
+    });
   } catch (err: any) {
-    console.error("Error en /api/webhook-mp:", err);
-    // MP requiere que respondamos 200 aunque haya error, si no reintenta hasta el infinito
-    // Solo devolvemos 500 si es un error de firma (arriba)
-    return NextResponse.json({ ok: false, error: err.message }, { status: 200 });
+    console.error(
+      "Error en /api/webhook-mp:",
+      err
+    );
+
+    return NextResponse.json(
+      {
+        ok: false,
+        error: err.message,
+      },
+      {
+        status: 200,
+      }
+    );
   }
 }
 
-// MP puede hacer GET para verificar que el endpoint existe
 export async function GET() {
-  return NextResponse.json({ ok: true, endpoint: "webhook-mp" });
+  return NextResponse.json({
+    ok: true,
+    endpoint: "webhook-mp",
+  });
 }
-
