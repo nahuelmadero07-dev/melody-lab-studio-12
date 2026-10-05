@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Fraunces, Inter, Caveat } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 
@@ -16,15 +16,22 @@ const inter = Inter({
   display: "swap",
 });
 
+const caveat = Caveat({
+  subsets: ["latin"],
+  variable: "--font-caveat",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "Melody Lab Studio — Convertí su historia en una canción",
+  title: "Melody Lab Studio — Su historia, hecha canción.",
   description:
-    "Contás la historia. Nuestra IA la convierte en una canción única con su nombre. Escuchás un adelanto gratis y pagás solo si te emociona.",
+    "Una canción compuesta especialmente para esa persona, con su nombre, su historia y sus recuerdos. Escuchás un adelanto gratis y pagás solo si te emociona.",
   openGraph: {
-    title: "Melody Lab Studio — Convertí su historia en una canción",
+    title: "Melody Lab Studio — Su historia, hecha canción.",
     description:
-      "Un regalo hecho a medida en 3 minutos. Escuchás un adelanto gratis, pagás solo si te gusta.",
+      "Un regalo pensado, grabado y entregado en menos de un minuto. Escuchás un adelanto gratis, pagás solo si te emociona.",
     type: "website",
+    url: "https://www.melodylabstudio.site",
   },
 };
 
@@ -34,9 +41,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className={`${fraunces.variable} ${inter.variable}`}>
-      <body className="font-sans antialiased selection:bg-gold/30 selection:text-parchment">
-
+    <html
+      lang="es"
+      className={`${fraunces.variable} ${inter.variable} ${caveat.variable}`}
+    >
+      <body className="font-sans antialiased selection:bg-gold/30 selection:text-ink">
         <Script
           id="meta-pixel"
           strategy="afterInteractive"
@@ -55,18 +64,10 @@ export default function RootLayout({
             `,
           }}
         />
-
         <noscript>
-          <img
-            height="1"
-            width="1"
-            style={{ display: "none" }}
-            src="https://www.facebook.com/tr?id=1423641575865360&ev=PageView&noscript=1"
-            alt=""
-          />
+          <img height="1" width="1" style={{ display: "none" }} src="https://www.facebook.com/tr?id=1423641575865360&ev=PageView&noscript=1" alt="" />
         </noscript>
-
-        <div className="relative z-10">{children}</div>
+        {children}
       </body>
     </html>
   );
