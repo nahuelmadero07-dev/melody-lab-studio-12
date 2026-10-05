@@ -1,44 +1,41 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  content: [
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+  content: ["./app/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
       colors: {
-        // Fondo principal — violeta noche profundo
-        night: {
-          DEFAULT: "#1A1428",
-          soft: "#251B3A",
-          deep: "#0F0B1A",
+        paper: {
+          DEFAULT: "#F7F0DC",
+          warm: "#F2E8CF",
+          deep: "#EBDFC0",
         },
-        // Texto blanco cálido (no puro)
-        parchment: {
-          DEFAULT: "#F5EFE0",
-          muted: "#B4A8CC",
-          dim: "#7A6E96",
+        ink: {
+          DEFAULT: "#1F1810",
+          soft: "#4A3D2E",
+          dim: "#6B5847",
+          faint: "#9B8A75",
         },
-        // Acento principal — dorado cálido grabado
         gold: {
-          DEFAULT: "#E9C46A",
-          deep: "#C99A3B",
-          soft: "#F3D998",
+          DEFAULT: "#B8863E",
+          deep: "#8E6628",
+          soft: "#D4A95C",
         },
-        // Acento secundario — rosa polvo para elementos suaves
-        rose: {
-          dust: "#D4A5A5",
+        lacre: {
+          DEFAULT: "#8E2A2A",
+          deep: "#6B1F1F",
         },
       },
       fontFamily: {
-        display: ["var(--font-fraunces)", "Georgia", "serif"],
+        serif: ["var(--font-fraunces)", "Georgia", "serif"],
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        hand: ["var(--font-caveat)", "cursive"],
       },
       letterSpacing: {
-        tighter2: "-0.035em",
+        titulo: "-0.025em",
       },
       maxWidth: {
-        reading: "68ch",
+        lectura: "62ch",
       },
     },
   },
