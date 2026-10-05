@@ -82,7 +82,7 @@ export default async function EscucharPage({
         </Link>
         {yaPagado && (
           <span className="rounded-full border border-gold/25 bg-gold/5 px-3 py-1 text-xs text-gold">
-            ✓ Canción completa desbloqueada
+            ✓ Canción desbloqueada
           </span>
         )}
       </div>
@@ -101,6 +101,29 @@ export default async function EscucharPage({
           : "Preparamos dos versiones. Escuchá 30 segundos de cada una — la que más te emocione es la que se lleva."}
       </p>
 
+      {/* 🚨 BANNER URGENTE DE DESCARGA — solo cuando ya pagó */}
+      {yaPagado && (
+        <div className="mt-8 rounded-2xl border-2 border-gold bg-gold/10 p-5 md:p-6">
+          <div className="flex items-start gap-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold text-night">
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 3v12M6 11l6 6 6-6M3 20h18" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-display text-xl leading-snug text-parchment md:text-2xl">
+                Importante: descargá las canciones a tu celular
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-parchment-muted md:text-base">
+                Buscá los botones dorados grandes debajo de cada canción y tocalos para guardarlas.
+                Si cerrás esta página sin descargarlas, las podés recuperar entrando al link del
+                email que te mandamos.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Reproductores */}
       <div className="mt-12 space-y-8">
         <VersionCard
@@ -117,7 +140,7 @@ export default async function EscucharPage({
         />
       </div>
 
-      {/* CTA de compra o mensaje de descarga */}
+      {/* CTA de compra (si todavía no pagó) */}
       {!yaPagado && (
         <div className="mt-14 rounded-2xl border border-gold/20 bg-gold/5 p-8">
           <p className="font-display text-2xl leading-tight text-parchment">
@@ -133,6 +156,38 @@ export default async function EscucharPage({
           <p className="mt-4 text-xs text-parchment-dim">
             Pago procesado por Mercado Pago. 7 días de garantía de devolución.
           </p>
+        </div>
+      )}
+
+      {/* 🚨 RECORDATORIO FINAL de descarga + invitación a seguir el IG */}
+      {yaPagado && (
+        <div className="mt-14 space-y-6">
+          <div className="rounded-xl border border-parchment-muted/15 bg-night-soft/40 p-5">
+            <p className="text-sm font-medium text-parchment">
+              ¿Ya descargaste las dos canciones?
+            </p>
+            <p className="mt-2 text-sm text-parchment-muted">
+              Tocá los botones dorados "Descargar esta canción" arriba. Si cerrás esta página sin
+              bajarlas, las podés recuperar siempre desde el link del email.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-gold/15 bg-gold/5 p-5 text-center">
+            <p className="text-sm text-parchment">
+              💛 Si te emocionó, mostranos cómo lo recibió
+            </p>
+            <p className="mt-1 text-xs text-parchment-muted">
+              Mandanos la reacción por Instagram, nos encanta verla.
+            </p>
+            <a
+              href="https://www.instagram.com/melody.labstudio/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-2 rounded-full border border-gold/40 px-5 py-2 text-sm text-gold hover:bg-gold/10"
+            >
+              Seguinos en Instagram @melody.labstudio
+            </a>
+          </div>
         </div>
       )}
 
