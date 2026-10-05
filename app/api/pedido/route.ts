@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       .from("pedidos")
       .insert({
         ocasion: body.ocasion,
-        tu_nombre: body.tuNombre,
+        tu_nombre: body.tuNombre || "",       // Ya no se pide en el nuevo flujo, puede venir vacío
         destinatario: body.destinatario,
         relacion: body.relacion,
         historia: body.historia,
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
         clima: body.clima,
         voz: body.voz,
         email,
-        whatsapp: body.whatsapp || null,
+        whatsapp: body.whatsapp || null,       // Ya no se pide en el nuevo flujo
         status: "generando",
         plan: "estandar",
         monto: PRECIO_ARS,
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
 function validarPayload(b: any): string[] {
   const e: string[] = [];
   if (!b.ocasion) e.push("Falta ocasión");
-  if (!b.tuNombre || b.tuNombre.length < 2) e.push("Falta tu nombre");
+  // ⚠ Antes se exigía b.tuNombre. Ahora no se pide en el formulario (fricción muerta).
   if (!b.destinatario || b.destinatario.length < 2) e.push("Falta nombre del destinatario");
   if (!b.relacion) e.push("Falta relación");
   if (!b.historia || b.historia.length < 20) e.push("Historia muy corta");
