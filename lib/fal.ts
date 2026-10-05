@@ -133,16 +133,33 @@ function recortar(texto: string, max: number): string {
   return texto.slice(0, corte > max * 0.6 ? corte : max).trim();
 }
 
+/**
+ * Traduce el estilo musical elegido al prompt que entiende Lyria (inglés).
+ *
+ * ⚠ Si el usuario eligió "Otro" y escribió un estilo custom en el input libre,
+ * ese valor NO está en el map — cae en el `??` y se pasa tal cual al prompt.
+ * Lyria entiende géneros en inglés y español, así que un "Chamamé" o "Cuarteto"
+ * va a funcionar bien aunque no esté mapeado explícitamente.
+ */
 function traducirEstilo(estilo: string): string {
   const map: Record<string, string> = {
     Pop: "Modern pop",
-    Balada: "Ballad",
-    Rock: "Rock",
+    "Balada romántica": "Romantic Spanish ballad",
+    Balada: "Spanish ballad",                              // compat con pedidos viejos
+    "Rock nacional": "Argentine rock",
+    Rock: "Rock",                                           // compat con pedidos viejos
+    Cumbia: "Argentine cumbia",
+    Tango: "Classic Argentine tango",
+    Bolero: "Latin bolero",
+    "Mariachi / Ranchera": "Mexican mariachi ranchera",
+    Mariachi: "Mariachi",                                   // compat con pedidos viejos
+    Folklore: "Argentine folklore (chacarera / zamba)",
     Reggaeton: "Reggaeton",
-    Bolero: "Bolero",
-    Mariachi: "Mariachi",
+    Salsa: "Latin salsa",
+    Vals: "Spanish waltz",
+    Religiosa: "Christian worship song",
   };
-  return map[estilo] ?? "Ballad";
+  return map[estilo] ?? estilo;
 }
 
 function traducirClima(clima: string): string {
