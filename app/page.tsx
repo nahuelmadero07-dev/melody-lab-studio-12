@@ -20,6 +20,7 @@ export default function Home() {
         </div>
         <Link
           href="/crear"
+          onClick={trackClickCrear}
           className="rounded-full border border-parchment-muted/30 px-4 py-2 text-sm text-parchment hover:border-gold hover:text-gold"
         >
           Crear canción
@@ -52,6 +53,7 @@ export default function Home() {
               <div className="mt-9 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
                 <Link
                   href="/crear"
+                  onClick={trackClickCrear}
                   className="group inline-flex items-center gap-3 rounded-full bg-gold px-7 py-4 font-medium text-night transition hover:bg-gold-soft"
                 >
                   Crear mi canción
@@ -63,6 +65,32 @@ export default function Home() {
                   Demo gratis · Solo pagás si te gusta · {PRECIO_LABEL}
                 </p>
               </div>
+
+              {/* 🆕 FRANJA DE PRUEBA SOCIAL arriba del fold */}
+              <div className="mt-10 flex flex-wrap items-center gap-4 border-t border-parchment-muted/10 pt-6">
+                <div className="flex -space-x-2">
+                  <AvatarInicial letra="M" bg="bg-gold/30" />
+                  <AvatarInicial letra="C" bg="bg-rose-dust/30" />
+                  <AvatarInicial letra="J" bg="bg-parchment-muted/30" />
+                  <AvatarInicial letra="L" bg="bg-gold/20" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1 text-gold">
+                    {[1,2,3,4,5].map((i) => <StarIcon key={i} />)}
+                  </div>
+                  <p className="mt-1 text-xs text-parchment-dim">
+                    Cientos de canciones hechas con cariño · Mirá reacciones en{" "}
+                    <a
+                      href="https://www.instagram.com/melody.labstudio/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gold hover:underline"
+                    >
+                      @melody.labstudio
+                    </a>
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Mockup reproductor */}
@@ -71,7 +99,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ============ CÓMO FUNCIONA (secuencia real → numeración OK) ============ */}
+      {/* ============ CÓMO FUNCIONA ============ */}
       <section id="como-funciona" className="border-t border-parchment-muted/10">
         <div className="mx-auto max-w-6xl px-6 py-24">
           <div className="mb-14 max-w-2xl">
@@ -92,12 +120,12 @@ export default function Home() {
             <Step
               n="02"
               title="La IA compone"
-              body="Generamos dos versiones distintas: dos voces, dos climas, dos estilos. Con su nombre cantado dentro de la letra."
+              body="Generamos dos versiones distintas: dos arreglos, dos climas. Con su nombre cantado dentro de la letra."
             />
             <Step
               n="03"
               title="Escuchás y decidís"
-              body={`Te mandamos un adelanto de 30 segundos por email o WhatsApp. Si te emociona, desbloqueás la canción completa por ${PRECIO_LABEL}.`}
+              body={`Te mandamos un adelanto de 30 segundos por email. Si te emociona, desbloqueás la canción completa por ${PRECIO_LABEL}.`}
             />
           </ol>
         </div>
@@ -144,6 +172,7 @@ export default function Home() {
           </p>
           <Link
             href="/crear"
+            onClick={trackClickCrear}
             className="mt-10 inline-flex items-center gap-3 rounded-full bg-gold px-7 py-4 font-medium text-night hover:bg-gold-soft"
           >
             Empezar ahora
@@ -151,6 +180,33 @@ export default function Home() {
               <path d="M4 10h12M11 5l5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </Link>
+        </div>
+      </section>
+
+      {/* 🆕 ============ SECCIÓN INSTAGRAM / PRUEBA SOCIAL ============ */}
+      <section className="border-t border-parchment-muted/10 bg-night-deep/40">
+        <div className="mx-auto max-w-4xl px-6 py-24 text-center">
+          <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-gold/25 bg-gold/5 px-3 py-1 text-xs text-gold">
+            <InstagramIconMini />
+            @melody.labstudio
+          </p>
+          <h2 className="font-display text-3xl leading-tight text-parchment md:text-4xl">
+            Mirá las canciones que hicimos esta semana.
+          </h2>
+          <p className="mx-auto mt-4 max-w-xl text-parchment-muted">
+            Subimos todos los días adelantos de las canciones nuevas y reacciones reales
+            de quienes las recibieron. Seguinos y mirá lo que estamos componiendo.
+          </p>
+          <a
+            href="https://www.instagram.com/melody.labstudio/"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={trackClickInstagram}
+            className="mt-8 inline-flex items-center gap-3 rounded-full border border-gold/30 bg-gold/5 px-7 py-4 font-medium text-gold hover:bg-gold/10"
+          >
+            <InstagramIcon />
+            Seguir en Instagram
+          </a>
         </div>
       </section>
 
@@ -191,6 +247,17 @@ export default function Home() {
               <p className="mt-3 max-w-xs text-sm text-parchment-dim">
                 Canciones hechas a medida, con IA. Un regalo que no se olvida.
               </p>
+              {/* 🆕 Link a Instagram también en el footer */}
+              <a
+                href="https://www.instagram.com/melody.labstudio/"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={trackClickInstagram}
+                className="mt-4 inline-flex items-center gap-2 text-sm text-gold hover:text-gold-soft"
+              >
+                <InstagramIcon />
+                @melody.labstudio
+              </a>
             </div>
 
             <div className="grid grid-cols-2 gap-8 text-sm md:grid-cols-3 md:gap-14">
@@ -213,6 +280,16 @@ export default function Home() {
                 <p className="mb-3 text-parchment">Contacto</p>
                 <ul className="space-y-2 text-parchment-dim">
                   <li><a href="mailto:hola@melodylabstudio.com" className="hover:text-gold">hola@melodylabstudio.com</a></li>
+                  <li>
+                    <a
+                      href="https://www.instagram.com/melody.labstudio/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-gold"
+                    >
+                      Instagram
+                    </a>
+                  </li>
                 </ul>
               </div>
             </div>
@@ -228,6 +305,20 @@ export default function Home() {
   );
 }
 
+/* ============ TRACKING DE EVENTOS AL PIXEL ============ */
+
+function trackClickCrear() {
+  if (typeof window !== "undefined" && (window as any).fbq) {
+    (window as any).fbq("track", "ViewContent", { content_name: "crear" });
+  }
+}
+
+function trackClickInstagram() {
+  if (typeof window !== "undefined" && (window as any).fbq) {
+    (window as any).fbq("trackCustom", "FollowInstagram");
+  }
+}
+
 /* ============ COMPONENTES INTERNOS ============ */
 
 function Step({ n, title, body }: { n: string; title: string; body: string }) {
@@ -239,6 +330,42 @@ function Step({ n, title, body }: { n: string; title: string; body: string }) {
       <h3 className="font-display text-2xl leading-tight text-parchment">{title}</h3>
       <p className="mt-2 text-parchment-muted">{body}</p>
     </li>
+  );
+}
+
+function AvatarInicial({ letra, bg }: { letra: string; bg: string }) {
+  return (
+    <div className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-night ${bg} text-xs font-medium text-parchment`}>
+      {letra}
+    </div>
+  );
+}
+
+function StarIcon() {
+  return (
+    <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20">
+      <path d="M10 1l2.5 6 6.5.5-5 4.5 1.5 6.5L10 15l-5.5 3.5L6 12 1 7.5 7.5 7 10 1z" />
+    </svg>
+  );
+}
+
+function InstagramIcon() {
+  return (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="3" y="3" width="18" height="18" rx="5"/>
+      <circle cx="12" cy="12" r="4"/>
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+    </svg>
+  );
+}
+
+function InstagramIconMini() {
+  return (
+    <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="3" width="18" height="18" rx="5"/>
+      <circle cx="12" cy="12" r="4"/>
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+    </svg>
   );
 }
 
@@ -305,7 +432,7 @@ function PlayerMockup() {
         </div>
 
         <div className="mb-4">
-          <p className="font-display text-lg text-parchment">Para mi vieja, en sus 60</p>
+          <p className="font-display text-lg text-parchment">Para mamá, en sus 70</p>
           <p className="text-sm text-parchment-dim">Estilo bolero · voz femenina</p>
         </div>
 
@@ -404,11 +531,11 @@ const occasions = [
 const faqs = [
   {
     q: "¿Cuánto tarda en llegar?",
-    a: "Entre 2 y 3 minutos. Te avisamos por email —y por WhatsApp si nos lo dejaste— cuando esté listo el adelanto.",
+    a: "Entre 2 y 3 minutos. Te avisamos por email cuando esté listo el adelanto.",
   },
   {
     q: "¿Puedo elegir el estilo musical?",
-    a: "Sí. En el formulario elegís entre pop, balada, rock, reggaeton, bolero o mariachi. Si dudás, marcá el que mejor le pegue a la persona.",
+    a: "Sí. Tenés 12 estilos para elegir (balada, pop, cumbia, tango, bolero, folklore, salsa, mariachi, rock nacional, vals, religiosa, reggaeton) y si tu estilo no está entre esos, podés escribirlo vos mismo.",
   },
   {
     q: "¿Y la voz? ¿Es masculina o femenina?",
