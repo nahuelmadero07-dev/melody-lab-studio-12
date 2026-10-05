@@ -5,6 +5,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // === Paleta VIEJA (se mantiene para /crear y /escuchar) ===
         paper: {
           DEFAULT: "#F7F0DC",
           warm: "#F2E8CF",
@@ -25,6 +26,27 @@ const config: Config = {
           DEFAULT: "#8E2A2A",
           deep: "#6B1F1F",
         },
+        // === Paleta NUEVA (home v2) ===
+        ebony: {
+          DEFAULT: "#0E0A0C",
+          soft: "#1A1216",
+          card: "#231A1E",
+          deep: "#0A0708",
+        },
+        cream: {
+          DEFAULT: "#F5E8CF",
+          dim: "#A89A83",
+          faint: "#6B5E54",
+        },
+        rose: {
+          DEFAULT: "#F0416C",
+          deep: "#C32B52",
+        },
+        gold2: {
+          DEFAULT: "#D4A74A",
+          deep: "#8B6B2E",
+        },
+        wa: "#25D366",
       },
       fontFamily: {
         serif: ["var(--font-fraunces)", "Georgia", "serif"],
