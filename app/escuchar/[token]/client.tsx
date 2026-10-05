@@ -122,8 +122,14 @@ export function ReproductorSnippet({ url }: { url: string }) {
 }
 
 /**
- * Reproductor completo — sin límite de 30 segundos, con botón de descarga.
- * Se muestra después de que el usuario paga.
+ * Reproductor completo — se muestra DESPUÉS de pagar.
+ *
+ * ⚠ Rediseñado: antes el único botón de descarga era un link chico tipo
+ * "Descargar MP3" con ícono mínimo. En mobile, la gente mayor no lo veía
+ * y buscaba descargar desde los "3 puntitos" nativos del <audio controls>
+ * (que son microscópicos). Resultado: pagaban y no se llevaban el MP3.
+ *
+ * Ahora: botón ANCHO Y DORADO abajo del reproductor, imposible de no ver.
  */
 export function ReproductorCompleto({
   url,
@@ -135,18 +141,19 @@ export function ReproductorCompleto({
   return (
     <div>
       <audio controls src={url} className="w-full" />
-      <div className="mt-4">
-        <a
-          href={url}
-          download={filename}
-          className="inline-flex items-center gap-2 text-sm text-gold hover:text-gold-soft"
-        >
-          <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M10 3v11M5 10l5 5 5-5M3 17h14" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Descargar MP3
-        </a>
-      </div>
+      <a
+        href={url}
+        download={filename}
+        className="mt-5 flex w-full items-center justify-center gap-3 rounded-xl bg-gold px-6 py-5 font-medium text-night shadow-lg shadow-gold/20 transition hover:bg-gold-soft active:scale-[0.98]"
+      >
+        <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M12 3v12M6 11l6 6 6-6M3 20h18" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <span className="text-lg md:text-xl">Descargar esta canción</span>
+      </a>
+      <p className="mt-2 text-center text-xs text-parchment-dim">
+        Se guarda en tu celular como archivo MP3.
+      </p>
     </div>
   );
 }
@@ -175,12 +182,12 @@ export function BotonComprar({
       });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error ?? "Error creando el pago");
-     if (typeof window !== "undefined" && (window as any).fbq) {
-  (window as any).fbq("track", "InitiateCheckout", {
-    value: monto,
-    currency: "ARS",
-  });
-}
+      if (typeof window !== "undefined" && (window as any).fbq) {
+        (window as any).fbq("track", "InitiateCheckout", {
+          value: monto,
+          currency: "ARS",
+        });
+      }
       window.location.href = json.url;
     } catch (e: any) {
       setError(e.message);
