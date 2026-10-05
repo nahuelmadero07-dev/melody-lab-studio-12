@@ -11,8 +11,7 @@ html {
   scroll-padding-top: 80px;
 }
 
-html,
-body {
+html, body {
   background-color: #f7f0dc;
   color: #1f1810;
   min-height: 100%;
@@ -21,26 +20,133 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-body::before {
+/* ===== Clase que la home v2 aplica al wrapper raíz ===== */
+.home-dark {
+  background-color: #0E0A0C;
+  color: #F5E8CF;
+  position: relative;
+}
+.home-dark::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 1;
-  opacity: 0.08;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='320'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.4   0 0 0 0 0.3   0 0 0 0 0.2   0 0 0 0.7 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/></svg>");
 }
-
-main,
-nav,
-footer {
+.home-dark main,
+.home-dark nav,
+.home-dark footer {
   position: relative;
   z-index: 2;
 }
 
+/* ===== Tipografía display (Fraunces con eje SOFT) ===== */
+.h-display {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 500;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  font-variation-settings: "opsz" 144, "SOFT" 50;
+}
+.h-section {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  font-variation-settings: "opsz" 144, "SOFT" 50;
+}
+.italic-soft {
+  font-style: italic;
+  font-variation-settings: "opsz" 144, "SOFT" 100;
+}
+
+/* ===== Cassette player v2 ===== */
+@keyframes spin-reel { to { transform: rotate(360deg); } }
+.reel.playing { animation: spin-reel 2s linear infinite; }
+
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+.wave-bar {
+  display: inline-block;
+  background: currentColor;
+  border-radius: 2px;
+  transform-origin: center;
+}
+.wave-bar.playing { animation: wave 0.9s ease-in-out infinite; }
+
+/* ===== Pulso del CTA principal ===== */
+@keyframes pulse-rose {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(240, 65, 108, 0.4); }
+  50% { box-shadow: 0 0 0 10px rgba(240, 65, 108, 0); }
+}
+.pulse-cta { animation: pulse-rose 2.4s ease-in-out infinite; }
+
+/* ===== Scroll horizontal para demos ===== */
+.scroll-x {
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.scroll-x > * { scroll-snap-align: start; }
+.scroll-x::-webkit-scrollbar { height: 4px; }
+.scroll-x::-webkit-scrollbar-thumb { background: #D4A74A; border-radius: 2px; }
+
+/* ===== WhatsApp flotante ===== */
+.wa-float {
+  position: fixed;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #25D366;
+  color: white;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+  width: 56px;
+  height: 56px;
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  box-shadow:
+    0 10px 30px -5px rgba(37, 211, 102, 0.55),
+    0 4px 10px rgba(0, 0, 0, 0.3),
+    0 0 0 4px rgba(37, 211, 102, 0.12);
+}
+.wa-float:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+}
+.wa-float:active { transform: scale(0.95); }
+@media (min-width: 640px) {
+  .wa-float {
+    width: auto;
+    height: auto;
+    padding: 14px 20px 14px 16px;
+    right: calc(24px + env(safe-area-inset-right, 0px));
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+}
+@keyframes wa-pulse-ring {
+  0%, 100% { box-shadow: 0 10px 30px -5px rgba(37,211,102,0.55), 0 4px 10px rgba(0,0,0,0.3), 0 0 0 4px rgba(37,211,102,0.12); }
+  50% { box-shadow: 0 10px 30px -5px rgba(37,211,102,0.55), 0 4px 10px rgba(0,0,0,0.3), 0 0 0 14px rgba(37,211,102,0); }
+}
+.wa-float.ping { animation: wa-pulse-ring 2.4s ease-out 2s 3; }
+
+/* ===== Burbujas WhatsApp (testimonios) ===== */
+.chat-bubble-in {
+  background: #FFFFFF;
+  color: #0b1210;
+  border-radius: 10px 10px 10px 2px;
+  position: relative;
+}
+
+/* ===== Resto: viejo (polaroid, cassette v1, etc.) para /crear y /escuchar ===== */
 .cassette {
-  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4) 0%, transparent 50%),
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, transparent 50%),
     linear-gradient(135deg, #f2e8cf 0%, #ebdfc0 100%);
 }
 
@@ -48,18 +154,11 @@ footer {
   background: #ffffff;
   padding: 10px 10px 12px 10px;
   border-radius: 6px;
-  box-shadow: 0 1px 2px rgba(31, 24, 16, 0.08), 0 10px 30px -8px rgba(31, 24, 16, 0.15);
+  box-shadow: 0 1px 2px rgba(31,24,16,0.08), 0 10px 30px -8px rgba(31,24,16,0.15);
   transition: transform 0.3s ease;
 }
-.polaroid:hover {
-  transform: translateY(-2px) rotate(0deg);
-}
-.polaroid img {
-  display: block;
-  width: 100%;
-  height: auto;
-  border-radius: 2px;
-}
+.polaroid:hover { transform: translateY(-2px) rotate(0deg); }
+.polaroid img { display: block; width: 100%; height: auto; border-radius: 2px; }
 .polaroid .pie {
   font-family: var(--font-caveat), cursive;
   font-size: 21px;
@@ -83,47 +182,26 @@ footer {
 .r-5 { transform: rotate(-1deg); }
 .r-6 { transform: rotate(0.6deg); }
 
-@keyframes girar {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-.animar-girar {
-  animation: girar 18s linear infinite;
-}
+@keyframes girar { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.animar-girar { animation: girar 18s linear infinite; }
 
-@keyframes onda {
-  0%, 100% { transform: scaleY(0.3); }
-  50% { transform: scaleY(1); }
-}
-.barra-onda {
-  transform-origin: bottom;
-  animation: onda 1.2s ease-in-out infinite;
-}
+@keyframes onda { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+.barra-onda { transform-origin: bottom; animation: onda 1.2s ease-in-out infinite; }
 
 @keyframes popupEnter {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-.popup-enter {
-  animation: popupEnter 0.4s ease-out;
-}
+.popup-enter { animation: popupEnter 0.4s ease-out; }
 
 *:focus-visible {
-  outline: 2px solid #b8863e;
+  outline: 2px solid #F0416C;
   outline-offset: 3px;
-  border-radius: 2px;
+  border-radius: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
