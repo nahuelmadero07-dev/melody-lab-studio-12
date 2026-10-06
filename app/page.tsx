@@ -314,7 +314,7 @@ function Hero() {
       <div className="mx-auto max-w-6xl grid lg:grid-cols-5 gap-10 lg:gap-14 items-center">
         {/* Cassette - va primero en mobile */}
         <div className="order-1 lg:order-2 lg:col-span-2">
-          <CassetteDecorativo />
+          <PlayerCassette />
         </div>
 
         {/* Texto hero */}
@@ -379,55 +379,151 @@ function Hero() {
   );
 }
 
-/* Cassette estático decorativo */
-function CassetteDecorativo() {
+/* Player cassette con audio REAL (reproduce /public/demo-primavera.mp3) */
+function PlayerCassette() {
+  const [playing, setPlaying] = useState(false);
+  const [seconds, setSeconds] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [barras] = useState(() => Array.from({ length: 32 }, () => 15 + Math.random() * 85));
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const onEnd = () => {
+      setPlaying(false);
+      setSeconds(0);
+    };
+    const onTime = () => setSeconds(Math.floor(audio.currentTime));
+    audio.addEventListener("ended", onEnd);
+    audio.addEventListener("timeupdate", onTime);
+    return () => {
+      audio.removeEventListener("ended", onEnd);
+      audio.removeEventListener("timeupdate", onTime);
+    };
+  }, []);
+
+  function togglePlay() {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (playing) {
+      audio.pause();
+      setPlaying(false);
+    } else {
+      audio.play().catch(() => {});
+      setPlaying(true);
+    }
+  }
+
+  function format(s: number) {
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${m}:${r.toString().padStart(2, "0")}`;
+  }
+
+  return (
+    <div className="relative mx-auto max-w-sm">
+      <audio ref={audioRef} src="/demo-primavera.mp3" preload="metadata" />
+
+      <div className="flex items-center justify-center gap-2 mb-3">
+        <span className="h-px w-6 bg-gold2" />
+        <span className="font-hand text-gold2 text-[20px]">↓ dale play, es un ejemplo real</span>
+      </div>
+
+      <div
+        className="rounded-[20px] p-5 shadow-2xl"
+        style={{
+          background: "linear-gradient(135deg, #231A1E 0%, #1A1216 50%, #231A1E 100%)",
+          border: "1px solid rgba(212,167,74,0.2)",
+        }}
+      >
+        {/* Header del cassette */}
+        <div className="flex items-center justify-between mb-4 text-[10px] tracking-[0.2em] uppercase text-cream-dim">
+          <span>Mixtape · 001</span>
+          <span className="font-mono">A ⟷ B</span>
+        </div>
+
+        {/* Reels */}
+        <div
+          className="relative rounded-lg p-4 mb-4"
+          style={{ background: "#0E0A0C", border: "1px solid rgba(212,167,74,0.1)" }}
+        >
+          <div
+            className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-[3px]"
+            style={{ background: "#2a1f22", borderTop: "1px solid rgba(212,167,74,0.2)" }}
+          />
+          <div className="flex items-center justify-between relative">
+            <Reel playing={playing} />
+            <Reel playing={playing} />
+          </div>
+        </div>
+
+        {/* Etiqueta de la canción */}
+        <div className="rounded-md px-4 py-3 mb-4" style={{ background: "#F5E8CF", color: "#0E0A0C" }}>
+          <p className="font-hand text-[22px] leading-tight">Para mamá, en sus 70</p>
+          <p className="text-[11px] mt-0.5 opacity-70">Bolero · voz femenina · 3:04</p>
+        </div>
+
+        {/* Waveform */}
+        <div className="h-10 flex items-end gap-[3px] mb-4 text-rose">
+          {barras.map((h, i) => (
+            <span
+              key={i}
+              className={`wave-bar flex-1 ${playing ? "playing" : ""}`}
+              style={{
+                height: `${h}%`,
+                minHeight: "3px",
+                width: "3px",
+                animationDelay: `${i * 0.05}s`,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Controles */}
+        <div className="flex items-center justify-between gap-3">
+          <button
+            onClick={togglePlay}
+            className="flex-1 flex items-center justify-center gap-2 bg-cream text-ebony font-medium text-[15px] py-3 rounded-full hover:bg-white transition"
+          >
+            {playing ? (
+              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M5 3h4v14H5zM11 3h4v14h-4z" />
+              </svg>
+            ) : (
+              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M5 3l12 7-12 7V3z" />
+              </svg>
+            )}
+            <span>{playing ? "Pausar" : "Escuchar"}</span>
+          </button>
+          <span className="text-[12px] text-cream-dim font-mono">
+            {format(seconds)} / 0:30
+          </span>
+        </div>
+      </div>
+
+      <p className="text-[12px] text-cream-faint text-center mt-3 italic">
+        Lado A · adelanto gratis. La completa se desbloquea después.
+      </p>
+    </div>
+  );
+}
+
+/* Carrete del cassette - gira con la clase .reel.playing de globals.css */
+function Reel({ playing }: { playing: boolean }) {
   return (
     <div
-      className="rounded-2xl p-6 max-w-md mx-auto"
+      className={`reel h-20 w-20 rounded-full flex items-center justify-center ${playing ? "playing" : ""}`}
       style={{
-        background: "linear-gradient(145deg,#2a1b22 0%,#1a1014 100%)",
-        border: "1px solid rgba(245,232,207,.1)",
-        boxShadow: "0 20px 60px -20px rgba(0,0,0,.6), inset 0 1px 0 rgba(245,232,207,.08)",
+        background:
+          "radial-gradient(circle at center, #D4A74A 0%, #D4A74A 15%, #1A1216 16%, #1A1216 100%)",
+        border: "1px solid rgba(212,167,74,0.3)",
       }}
     >
-      {/* Etiqueta */}
-      <div className="bg-cream text-ebony rounded-md px-3.5 py-3 flex items-center gap-3 font-serif">
-        <span className="bg-rose text-white px-2 py-0.5 rounded text-[10px] font-extrabold tracking-wide">
-          A
-        </span>
-        <span className="text-[15px] font-bold truncate flex-1">
-          Para Karina — Juanjo
-        </span>
-      </div>
-
-      {/* Reels */}
-      <div className="flex justify-around mt-4 py-4">
-        {[0, 1].map((i) => (
-          <div
-            key={i}
-            className={i === 0 ? "mls-reel w-14 h-14 rounded-full relative" : "mls-reel-rev w-14 h-14 rounded-full relative"}
-            style={{
-              background:
-                "radial-gradient(circle,#2a1b22 30%,#0E0A0C 32%,#0E0A0C 55%,#2a1b22 57%)",
-              border: "2px solid rgba(245,232,207,.15)",
-            }}
-          >
-            <span
-              className="absolute inset-[40%] rounded-full"
-              style={{ background: "#D4A74A" }}
-            />
-          </div>
-        ))}
-      </div>
-
-      {/* Progress bar */}
-      <div className="mt-3 h-[3px] rounded-sm overflow-hidden" style={{ background: "rgba(245,232,207,.1)" }}>
-        <div className="h-full rounded-sm" style={{ width: "34%", background: "#F0416C" }} />
-      </div>
-      <div className="flex justify-between mt-1.5 text-[11px] text-cream-faint tabular-nums">
-        <span>0:42</span>
-        <span>2:14</span>
-      </div>
+      <div
+        className="h-6 w-6 rounded-full"
+        style={{ background: "#0E0A0C", border: "1px solid rgba(212,167,74,0.4)" }}
+      />
     </div>
   );
 }
