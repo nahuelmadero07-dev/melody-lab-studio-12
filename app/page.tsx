@@ -1,10 +1,24 @@
 "use client";
 
+/* ================================================================
+   app/page.tsx — Landing nueva para Melody Lab Studio
+   Reemplaza el archivo actual.
+
+   Depende de:
+   - /public/testimonios/01-hermoso.webp .. 08-buenisimo.webp
+   - lib/config.ts (PRECIO_LABEL)
+   - Fuentes cargadas en layout.tsx (Fraunces, Inter, Caveat)
+   - Clases custom en globals.css (home-dark, h-display, h-section,
+     italic-soft, pulse-cta, wa-float, chat-bubble-in)
+   - Colores custom en tailwind.config.ts (ebony, cream, rose, gold2, wa)
+   ================================================================ */
+
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { PRECIO_LABEL } from "@/lib/config";
 
-/* ============ TRACKING META PIXEL ============ */
+/* ---------- Tracking Meta Pixel (idéntico al page.tsx viejo) ---------- */
 function trackClickCrear() {
   if (typeof window !== "undefined" && (window as any).fbq) {
     (window as any).fbq("track", "ViewContent", { content_name: "crear" });
@@ -15,897 +29,1156 @@ function trackClickWhatsapp() {
     (window as any).fbq("trackCustom", "ClickWhatsapp");
   }
 }
-function trackClickInstagram() {
-  if (typeof window !== "undefined" && (window as any).fbq) {
-    (window as any).fbq("trackCustom", "FollowInstagram");
-  }
-}
-function trackClickCompartir() {
-  if (typeof window !== "undefined" && (window as any).fbq) {
-    (window as any).fbq("trackCustom", "CompartirLanding");
-  }
-}
 
-/* ============ CONFIG CONTACTO ============ */
+/* ---------- Contacto ---------- */
 const WHATSAPP_NUM = "5491166382852";
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUM}?text=${encodeURIComponent(
   "Hola, tengo una duda antes de pedir mi canción"
 )}`;
-const COMPARTIR_URL = `https://wa.me/?text=${encodeURIComponent(
-  "Mirá esto que encontré, hacen canciones personalizadas con tu historia: https://www.melodylabstudio.site"
-)}`;
 
+/* ---------- Capturas reales en /public/testimonios/ ---------- */
+const CAPTURAS = [
+  { src: "/testimonios/01-hermoso.webp", alt: "Cliente escribió: HERMOSO ME HICISTE" },
+  { src: "/testimonios/02-espectacular.webp", alt: "Cliente escribió: Espectacular felicitaciones" },
+  { src: "/testimonios/03-super-recomendable.webp", alt: "Cliente escribió: Super recomendable" },
+  { src: "/testimonios/04-me-emocione.webp", alt: "Cliente escribió: Me emocioné, está hermosa" },
+  { src: "/testimonios/05-hermoso-gracias.webp", alt: "Cliente escribió: Hermoso gracias" },
+  { src: "/testimonios/06-muyy-biennn.webp", alt: "Cliente escribió: Muy bien, me gustó mucho" },
+  { src: "/testimonios/07-saltar-de-felicidad.webp", alt: "Cliente escribió: Me hicieron saltar de felicidad a ambos" },
+  { src: "/testimonios/08-buenisimo.webp", alt: "Cliente escribió: Buenísimo" },
+];
+
+/* ---------- Mensajes del ticker superior ---------- */
+const TICKER_MSGS = [
+  "Adelanto gratis",
+  "Entrega en 1 minuto",
+  "7 días de garantía",
+  "Voz cantada real · Google Lyria",
+  "Mercado Pago · 3 cuotas sin interés",
+];
+
+/* ---------- Compradores para el toast ---------- */
+const COMPRADORES = [
+  { name: "Graciela", city: "Buenos Aires" },
+  { name: "Marta", city: "Córdoba" },
+  { name: "Silvia", city: "Rosario" },
+  { name: "Patricia", city: "Mendoza" },
+  { name: "Claudia", city: "Tucumán" },
+  { name: "Roberto", city: "La Plata" },
+  { name: "Gustavo", city: "Mar del Plata" },
+  { name: "Eduardo", city: "Salta" },
+  { name: "Ricardo", city: "Santa Fe" },
+  { name: "Adriana", city: "San Juan" },
+  { name: "Alejandro", city: "Neuquén" },
+  { name: "Marcela", city: "Bahía Blanca" },
+  { name: "Gabriela", city: "Resistencia" },
+  { name: "Jorge", city: "Posadas" },
+  { name: "Fernando", city: "Paraná" },
+  { name: "Susana", city: "Corrientes" },
+  { name: "Daniel", city: "Formosa" },
+  { name: "Hugo", city: "Bariloche" },
+];
+
+/* ---------- Testimonios cards ---------- */
+const TESTIMONIOS = [
+  {
+    initial: "R",
+    name: "Rosita",
+    title: "La escuchó en el almuerzo familiar",
+    text: "Era el cumple 70 de mi mamá. Le puse la canción en el almuerzo. Toda la familia terminó llorando. Mi mamá me pidió escucharla 5 veces más esa misma tarde. No podía creer que decía su nombre.",
+  },
+  {
+    initial: "M",
+    name: "Marta",
+    title: "Mi marido se quedó mudo",
+    text: "Lo pusimos en el estéreo del auto cuando volvíamos de la cena de aniversario. Mi marido no dijo nada por dos minutos. Cuando terminó me agarró la mano y me dijo gracias. Nos emocionamos los dos.",
+  },
+  {
+    initial: "N",
+    name: "Nuria",
+    title: "Mi hija me la pidió otra vez",
+    text: "Se la hice a mi hija de 8 años para su cumpleaños, con la historia de cómo esperamos su llegada. La escuchó y me dijo mamá ponela otra vez. La repitió como 10 veces. Hoy la escucha para dormirse.",
+  },
+  {
+    initial: "J",
+    name: "Juanjo",
+    title: "Karina me saltó encima",
+    text: "Se la mandé por WhatsApp porque estábamos lejos. Me respondió un audio llorando. Al día siguiente me saltó encima apenas la vi. El regalo más barato y más fuerte que le hice en 7 años.",
+  },
+];
+
+/* ---------- FAQ ---------- */
+const FAQS = [
+  {
+    q: "¿Qué recibo exactamente?",
+    a: "Dos versiones diferentes de la canción (misma letra, distinto arreglo) en formato MP3, un link privado para escucharla online y compartirla, y factura electrónica. Todo en el mismo minuto, por mail.",
+  },
+  {
+    q: "¿Cuánto tarda?",
+    a: "Menos de 1 minuto desde que terminás el formulario. Mientras tanto podés quedarte en la página escuchando el adelanto gratis.",
+  },
+  {
+    q: "¿Puedo escuchar antes de pagar?",
+    a: "Sí. Después de contarnos la historia, en menos de un minuto te llega un adelanto gratis de 30 segundos con el nombre cantado adentro. Si te emociona, pagás. Si no, no pagás nada.",
+  },
+  {
+    q: "Medios de pago",
+    a: "Tarjeta de crédito con hasta 3 cuotas sin interés, débito en un pago, y todas las opciones de Mercado Pago (dinero en cuenta, tarjetas, QR).",
+  },
+  {
+    q: "¿Puedo elegir el estilo de música?",
+    a: "Sí. En el formulario elegís entre balada romántica, pop, cumbia, rock, folklore, bossa, trap, infantil y varios más. También elegís voz masculina o femenina.",
+  },
+  {
+    q: "¿Qué pasa si no me gusta?",
+    a: "Tenés 7 días desde la compra para pedir el reembolso completo. Sin preguntas, sin trámites. Nos escribís por WhatsApp y en 24h tenés la plata de vuelta.",
+  },
+];
+
+/* ================================================================
+   COMPONENTE PRINCIPAL
+   ================================================================ */
 export default function Home() {
   return (
     <div className="home-dark min-h-screen">
-      {/* NAV */}
-      <nav
-        className="sticky top-0 z-40 backdrop-blur-md border-b border-cream/5"
-        style={{
-          background: "rgba(14,10,12,0.85)",
-          paddingTop: "env(safe-area-inset-top, 0px)",
-        }}
-      >
-        <div className="mx-auto max-w-6xl px-4 md:px-8 flex items-center justify-between h-14">
-          <Link href="/" className="flex items-center gap-2">
-            <span
-              className="inline-block h-7 w-7 rounded-full"
-              style={{
-                background:
-                  "radial-gradient(circle at 35% 35%, #D4A74A 0%, #D4A74A 30%, #0E0A0C 32%, #0E0A0C 46%, #231A1E 48%, #231A1E 100%)",
-              }}
-            />
-            <span className="font-serif text-[17px] font-medium text-cream">
-              Melody Lab <span className="text-cream-dim">Studio</span>
-            </span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <a
-              href={WHATSAPP_URL}
-              onClick={trackClickWhatsapp}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center gap-1.5 text-[13px] text-cream-dim hover:text-cream px-3 py-1.5 rounded-full border border-cream/10"
-            >
-              <svg className="h-3.5 w-3.5 text-wa" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M20 3.5A11.8 11.8 0 0 0 2.1 18.5L1 23l4.6-1.1A11.8 11.8 0 1 0 20 3.5z" />
-              </svg>
-              WhatsApp
-            </a>
-            <Link
-              href="/crear"
-              onClick={trackClickCrear}
-              className="inline-flex items-center text-[13px] font-medium bg-rose text-white px-4 py-2 rounded-full hover:bg-rose-deep transition"
-            >
-              Empezar
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <StyleBlock />
+      <TopTicker />
+      <TopNav />
 
       <main id="top">
-        {/* HERO */}
-        <section className="px-4 md:px-8 pt-6 md:pt-10 pb-8 md:pb-16">
-          <div className="mx-auto max-w-6xl grid lg:grid-cols-5 gap-10 lg:gap-14 items-center">
-            {/* CASSETTE PLAYER - va primero en mobile */}
-            <div className="order-1 lg:order-2 lg:col-span-2">
-              <PlayerCassette />
-            </div>
+        <Hero />
+        <SocialStrip />
+        <Benefits />
+        <OfferAndCTA />
+        <Garantia />
+        <Comparador />
+        <CarruselCapturas />
+        <ReaccionReal />
+        <ComoFunciona />
+        <Experto />
+        <Testimonios />
+        <FAQ />
+        <MediaTicker />
+        <FinalCTA />
+      </main>
 
-            {/* TEXTO HERO */}
-            <div className="order-2 lg:order-1 lg:col-span-3">
-              <div className="inline-flex items-center gap-2 text-[12px] text-rose font-medium tracking-wider uppercase mb-5">
-                <span className="h-1.5 w-1.5 rounded-full bg-rose" />
-                Hecho con Google Lyria · entregado en 1 minuto
-              </div>
-              <h1 className="h-display text-[44px] sm:text-[56px] lg:text-[72px] text-cream">
-                Una canción<br />
-                con <em className="italic-soft">su nombre</em>,<br />
-                cantada en 1 minuto.
-              </h1>
-              <p className="mt-6 text-[17px] md:text-[18px] text-cream/80 leading-relaxed max-w-xl">
-                Contanos quién es y qué los une. Nuestra IA compone una canción única con su nombre cantado adentro y los recuerdos que le pertenecen solo a ustedes dos.
-              </p>
+      <Footer />
+      <BuyerToast />
+      <WhatsAppFloat />
+    </div>
+  );
+}
 
-              {/* CTA principal */}
-              <div className="mt-8" id="empezar">
-                <Link
-                  href="/crear"
-                  onClick={trackClickCrear}
-                  className="pulse-cta inline-flex items-center justify-center gap-2 bg-rose hover:bg-rose-deep text-white font-semibold text-[17px] px-7 py-4 rounded-full transition w-full sm:w-auto"
-                >
-                  Empezar mi canción gratis
-                  <ArrowRight />
-                </Link>
-                <div className="mt-4 flex items-center flex-wrap gap-x-4 gap-y-2 text-[14px] text-cream-dim">
-                  <span className="inline-flex items-center gap-1.5">
-                    <StarIcon />
-                    Adelanto gratis
-                  </span>
-                  <span>•</span>
-                  <span>
-                    Pagás <strong className="text-cream">{PRECIO_LABEL}</strong> solo si te emociona
-                  </span>
-                </div>
-              </div>
+/* ================================================================
+   ESTILOS INLINE: keyframes y clases custom para esta página
+   (No tocamos globals.css)
+   ================================================================ */
+function StyleBlock() {
+  return (
+    <style>{`
+      @keyframes mls-ticker { to { transform: translateX(calc(-50% - 30px)); } }
+      @keyframes mls-carousel { to { transform: translateX(calc(-50% - 7px)); } }
+      @keyframes mls-media { to { transform: translateX(calc(-50% - 30px)); } }
+      @keyframes mls-shine {
+        0% { left: -160%; opacity: 0; }
+        6% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { left: 190%; opacity: 0; }
+      }
+      @keyframes mls-spin { to { transform: rotate(360deg); } }
 
-              {/* Mini garantías */}
-              <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12.5px] text-cream-dim">
-                <span className="inline-flex items-center gap-1.5">
-                  <MPIcon small />
-                  Mercado Pago
-                </span>
-                <span>•</span>
-                <span>7 días de garantía</span>
-                <span>•</span>
-                <span>Factura electrónica</span>
-              </div>
-            </div>
+      .mls-ticker-track { animation: mls-ticker 25s linear infinite; }
+      .mls-carousel-track { animation: mls-carousel 50s linear infinite; }
+      .mls-media-track { animation: mls-media 25s linear infinite; }
+      .mls-reel { animation: mls-spin 4s linear infinite; }
+      .mls-reel-rev { animation: mls-spin 4s linear infinite reverse; }
+      .mls-shine-active::before {
+        animation: mls-shine 2.4s cubic-bezier(.25,.46,.45,.94) .3s forwards;
+      }
+
+      .mls-mask-h {
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+        mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+      }
+
+      .mls-shine-box { position: relative; overflow: hidden; }
+      .mls-shine-box::before {
+        content: ""; pointer-events: none; position: absolute;
+        top: -80%; left: -160%; width: 80%; height: 260%;
+        background: linear-gradient(105deg, transparent 15%, rgba(255,255,255,0.05) 30%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.05) 70%, transparent 85%);
+        transform: skewX(-12deg); opacity: 0;
+      }
+
+      .mls-toast {
+        transform: translateY(140%); opacity: 0;
+        transition: transform .5s cubic-bezier(.4,0,.2,1), opacity .4s;
+      }
+      .mls-toast.show { transform: translateY(0); opacity: 1; }
+
+      details.mls-faq[open] .mls-caret { transform: rotate(180deg); }
+      .mls-caret { transition: transform .3s; }
+
+      /* Soft gradients por secciones */
+      .mls-section-alt {
+        background: #150E11;
+        border-top: 1px solid rgba(245,232,207,.06);
+        border-bottom: 1px solid rgba(245,232,207,.06);
+      }
+    `}</style>
+  );
+}
+
+/* ================================================================
+   TOP TICKER
+   ================================================================ */
+function TopTicker() {
+  // Duplicamos los mensajes 6 veces para loop infinito
+  const repeated = Array(6).fill(TICKER_MSGS).flat();
+  return (
+    <div
+      className="overflow-hidden border-b border-cream/10"
+      style={{
+        background: "linear-gradient(90deg,#1a0f14 0%,#2a1620 50%,#1a0f14 100%)",
+        paddingTop: "env(safe-area-inset-top, 0px)",
+      }}
+    >
+      <div className="mls-ticker-track flex gap-[60px] py-2.5 w-max">
+        {repeated.map((m, i) => (
+          <span
+            key={i}
+            className="text-[12.5px] font-semibold tracking-[1.5px] uppercase text-cream whitespace-nowrap inline-flex items-center gap-2"
+          >
+            <span className="text-rose">●</span>
+            {m}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   NAV
+   ================================================================ */
+function TopNav() {
+  return (
+    <nav
+      className="sticky top-0 z-40 backdrop-blur-md border-b border-cream/5"
+      style={{ background: "rgba(14,10,12,0.9)" }}
+    >
+      <div className="mx-auto max-w-6xl px-4 md:px-8 flex items-center justify-between h-14">
+        <Link href="/" className="flex items-center gap-2">
+          <span
+            className="inline-block h-7 w-7 rounded-full"
+            style={{
+              background:
+                "radial-gradient(circle at 35% 35%, #D4A74A 0%, #D4A74A 30%, #0E0A0C 32%, #0E0A0C 46%, #231A1E 48%, #231A1E 100%)",
+            }}
+          />
+          <span className="font-serif text-[17px] font-medium text-cream">
+            Melody Lab <span className="text-cream-dim">Studio</span>
+          </span>
+        </Link>
+        <div className="flex items-center gap-2">
+          <a
+            href={WHATSAPP_URL}
+            onClick={trackClickWhatsapp}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden sm:inline-flex items-center gap-1.5 text-[13px] text-cream-dim hover:text-cream px-3 py-1.5 rounded-full border border-cream/10 transition"
+          >
+            <svg className="h-3.5 w-3.5 text-wa" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 3.5A11.8 11.8 0 0 0 2.1 18.5L1 23l4.6-1.1A11.8 11.8 0 1 0 20 3.5z" />
+            </svg>
+            WhatsApp
+          </a>
+          <Link
+            href="/crear"
+            onClick={trackClickCrear}
+            className="inline-flex items-center text-[13px] font-medium bg-rose text-white px-4 py-2 rounded-full hover:bg-rose-deep transition"
+          >
+            Empezar
+          </Link>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+/* ================================================================
+   HERO
+   ================================================================ */
+function Hero() {
+  return (
+    <section className="px-4 md:px-8 pt-8 md:pt-14 pb-10 md:pb-20">
+      <div className="mx-auto max-w-6xl grid lg:grid-cols-5 gap-10 lg:gap-14 items-center">
+        {/* Cassette - va primero en mobile */}
+        <div className="order-1 lg:order-2 lg:col-span-2">
+          <CassetteDecorativo />
+        </div>
+
+        {/* Texto hero */}
+        <div className="order-2 lg:order-1 lg:col-span-3">
+          <div className="inline-flex items-center gap-2 text-[12px] text-rose font-medium tracking-wider uppercase mb-5">
+            <span className="h-1.5 w-1.5 rounded-full bg-rose" />
+            Hecho con Google Lyria · entregado en 1 minuto
           </div>
-        </section>
+          <h1 className="h-display text-[44px] sm:text-[56px] lg:text-[72px] text-cream">
+            Una canción<br />
+            con <em className="italic-soft">su nombre</em>,<br />
+            cantada en 1 minuto.
+          </h1>
 
-        {/* FRANJA PRUEBA SOCIAL */}
-        <section
-          className="border-y py-4 md:py-5"
-          style={{ background: "#150E11", borderColor: "rgba(245,232,207,0.08)" }}
-        >
-          <div className="mx-auto max-w-6xl px-4 md:px-8 flex items-center justify-center sm:justify-between gap-6 flex-wrap">
-            <div className="flex items-center gap-3">
-              <div className="flex -space-x-2">
-                <Inicial letra="R" style={{ background: "#D4A74A", border: "2px solid #0E0A0C", color: "#0E0A0C" }} />
-                <Inicial letra="M" style={{ background: "#F0416C", border: "2px solid #0E0A0C", color: "#fff" }} />
-                <Inicial letra="N" style={{ background: "#231A1E", border: "2px solid #0E0A0C", color: "#F5E8CF" }} />
-                <Inicial letra="J" style={{ background: "#F5E8CF", border: "2px solid #0E0A0C", color: "#0E0A0C" }} />
-              </div>
-              <p className="text-[13px] text-cream-dim leading-tight">
-                <strong className="text-cream font-medium">Rosita, Marta, Nuria y Juanjo</strong>
-                <br />
-                <span className="text-[12px]">regalaron la suya este mes</span>
-              </p>
-            </div>
-            <div className="flex items-center gap-3 text-[13px] text-cream-dim">
-              <div className="flex items-center gap-0.5">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <StarIcon key={i} />
-                ))}
-              </div>
-              {/* 🔧 CAMBIÁ EL NÚMERO POR TU TOTAL REAL */}
-              <span>
-                Más de <strong className="text-cream">500 personas</strong> ya la regalaron
-              </span>
-            </div>
+          {/* Rating */}
+          <div className="mt-5 flex items-center gap-2 flex-wrap">
+            <StarRow count={5} />
+            <span className="text-[14px] font-bold text-cream">4.8</span>
+            <span className="text-[13px] font-medium text-cream-faint">
+              <u>127 calificaciones</u>
+            </span>
           </div>
-        </section>
 
-        {/* REACCIÓN REAL — captura grande de WhatsApp */}
-        <section id="escuchar" className="py-16 md:py-24 px-4 md:px-8">
-          <div className="mx-auto max-w-5xl">
-            <p className="text-[12px] text-gold2 uppercase tracking-widest mb-4">
-              Lo que pasa cuando la escuchan
-            </p>
-            <h2 className="h-section text-[32px] md:text-[44px] mb-8 max-w-2xl text-cream">
-              Juanjo se la mandó a Karina.<br />
-              Esto fue lo que le respondió.
-            </h2>
+          <p className="mt-6 text-[17px] md:text-[18px] text-cream/80 leading-relaxed max-w-xl">
+            Contanos quién es y qué los une. Nuestra IA compone una canción única con su nombre cantado adentro y los recuerdos que le pertenecen solo a ustedes dos.
+          </p>
 
-            <div className="grid md:grid-cols-5 gap-8 md:gap-10 items-center">
-              {/* Captura real de WhatsApp */}
-              <div className="md:col-span-3">
-                <div className="rounded-2xl overflow-hidden shadow-2xl bg-ebony-card">
-                  <img
-                    src="/testimonios/hero_juanjo.jpg"
-                    alt="Captura real de WhatsApp — Karina respondiendo a Juanjo"
-                    className="block w-full h-auto"
-                    loading="lazy"
-                  />
-                </div>
-              </div>
-
-              {/* Testimonio al lado */}
-              <div className="md:col-span-2">
-                <p className="font-hand text-rose text-[26px] leading-tight mb-4">
-                  &ldquo;Me hicieron saltar de felicidad a&nbsp;ambos.&rdquo;
-                </p>
-                <p className="text-[15px] text-cream-dim leading-relaxed mb-5">
-                  Juanjo quería sorprender a Karina en su aniversario. Nos contó cómo se conocieron, el apodo que ella le pone, los momentos que lo definen. Eligió balada romántica, voz masculina. En menos de un minuto le llegó el adelanto. La pagó, se la mandó.
-                </p>
-                <div className="flex items-center gap-3">
-                  <span className="h-10 w-10 rounded-full bg-cream flex items-center justify-center font-serif text-ebony">
-                    J
-                  </span>
-                  <div>
-                    <p className="text-[14px] text-cream font-medium">Juanjo</p>
-                    <p className="text-[12px] text-cream-faint">Buenos Aires · agosto 2026</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* CÓMO FUNCIONA */}
-        <section
-          id="como"
-          className="py-16 md:py-24 px-4 md:px-8 border-y"
-          style={{ background: "#150E11", borderColor: "rgba(245,232,207,0.08)" }}
-        >
-          <div className="mx-auto max-w-6xl">
-            <div className="mb-12 md:mb-16 max-w-xl">
-              <p className="text-[12px] text-gold2 uppercase tracking-widest mb-4">
-                Cómo funciona
-              </p>
-              <h2 className="h-section text-[32px] md:text-[48px] text-cream">
-                Tres pantallas,<br />
-                un minuto,<br />
-                y ya la tenés.
-              </h2>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-10 md:gap-8">
-              <Paso
-                n="1"
-                titulo="Contás su historia"
-                body="Su nombre, la ocasión, qué los une. Si tenés un apodo, un recuerdo, un lugar de ustedes dos, lo ponés también. Dura 2 minutos. En el celular, sin registro."
-              />
-              <Paso
-                n="2"
-                titulo="La compone el estudio"
-                body="Google Lyria genera dos versiones distintas de la canción, cada una con la letra personalizada y su nombre cantado adentro. Menos de un minuto."
-              />
-              <Paso
-                n="3"
-                titulo="Escuchás y decidís"
-                body={
-                  <>
-                    Te llega un adelanto de 30 segundos a tu email. Si te emociona, desbloqueás la canción completa por{" "}
-                    <strong className="text-cream">{PRECIO_LABEL}</strong> y la descargás en MP3 para mandar por WhatsApp.
-                  </>
-                }
-              />
-            </div>
-
-            <div className="mt-14 text-center">
-              <Link
-                href="/crear"
-                onClick={trackClickCrear}
-                className="inline-flex items-center gap-2 bg-rose hover:bg-rose-deep text-white font-semibold text-[16px] px-7 py-3.5 rounded-full transition"
-              >
-                Empezar sin pagar nada
-                <ArrowRight />
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* REACCIONES REALES (grid de capturas) */}
-        <section id="reacciones" className="py-16 md:py-24 px-4 md:px-8">
-          <div className="mx-auto max-w-6xl">
-            <div className="mb-10 md:mb-14 max-w-xl">
-              <p className="text-[12px] text-gold2 uppercase tracking-widest mb-4">
-                Lo que nos escriben
-              </p>
-              <h2 className="h-section text-[32px] md:text-[48px] text-cream">
-                Reacciones reales, por WhatsApp.
-              </h2>
-              <p className="mt-5 text-[16px] text-cream-dim">
-                Son los mensajes tal cual nos llegaron. Sin editar, sin filtrar, con permiso de cada cliente. Tapamos solo el número.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-              {reacciones.map((r) => (
-                <CapturaReaccion key={r.src} {...r} />
-              ))}
-            </div>
-
-            {/* VUELVEN A PEDIR */}
-            <div className="mt-16">
-              <div className="mb-10 max-w-xl">
-                <p className="font-hand text-rose text-[22px] mb-2">la prueba más honesta</p>
-                <h3 className="h-section text-[26px] md:text-[36px] text-cream">
-                  Casi todos vuelven a pedirnos otra, para alguien más de la familia.
-                </h3>
-              </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-                {vuelven.map((r) => (
-                  <CapturaReaccion key={r.src} {...r} compact />
-                ))}
-              </div>
-            </div>
-
-            {/* COMPARTIR + IG */}
-            <div className="mt-14 rounded-2xl p-6 md:p-8 flex flex-col sm:flex-row items-center justify-between gap-5 bg-ebony-card border border-cream/10">
-              <div>
-                <p className="font-serif text-[20px] md:text-[22px] text-cream leading-tight">
-                  ¿Conocés a alguien a quien esto le haría bien?
-                </p>
-                <p className="text-[14px] text-cream-dim mt-1">
-                  Mandale el link por WhatsApp.
-                </p>
-              </div>
-              <a
-                href={COMPARTIR_URL}
-                onClick={trackClickCompartir}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full bg-wa text-white px-5 py-3 text-[14px] font-medium hover:brightness-110 whitespace-nowrap"
-              >
-                <WhatsappIcon className="h-5 w-5" />
-                Compartir por WhatsApp
-              </a>
-            </div>
-
-            <div className="mt-8 text-center">
-              <a
-                href="https://www.instagram.com/melody.labstudio/"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={trackClickInstagram}
-                className="inline-flex items-center gap-2 text-[14px] text-cream-dim hover:text-cream"
-              >
-                Mirá más reacciones en Instagram
-                <InstagramIcon />
-              </a>
-            </div>
-          </div>
-        </section>
-
-        {/* PRECIO - ANCLAJE DE VALOR */}
-        <section
-          className="py-16 md:py-24 px-4 md:px-8 border-y"
-          style={{ background: "#150E11", borderColor: "rgba(245,232,207,0.08)" }}
-        >
-          <div className="mx-auto max-w-4xl text-center">
-            <p className="text-[12px] text-gold2 uppercase tracking-widest mb-4">
-              Lo que vale
-            </p>
-            <h2 className="h-section text-[32px] md:text-[48px] mb-10 text-cream">
-              Menos que un ramo.<br />
-              Dura toda la vida.
-            </h2>
-
-            <div className="grid grid-cols-3 gap-3 md:gap-5 mb-10 max-w-3xl mx-auto">
-              <div className="rounded-xl p-4 md:p-5 opacity-60 bg-ebony-card border border-cream/10">
-                <p className="text-[11px] text-cream-faint uppercase tracking-wider mb-2">
-                  Un ramo
-                </p>
-                <p className="font-serif text-[22px] md:text-[32px] text-cream mb-1">$15.000</p>
-                <p className="text-[11px] md:text-[12px] text-cream-faint">Dura 4 días</p>
-              </div>
-              <div className="rounded-xl p-4 md:p-5 opacity-60 bg-ebony-card border border-cream/10">
-                <p className="text-[11px] text-cream-faint uppercase tracking-wider mb-2">
-                  Chocolates
-                </p>
-                <p className="font-serif text-[22px] md:text-[32px] text-cream mb-1">$12.000</p>
-                <p className="text-[11px] md:text-[12px] text-cream-faint">Dura 1 tarde</p>
-              </div>
-              <div
-                className="rounded-xl p-5 md:p-6 relative"
-                style={{ background: "linear-gradient(135deg, #F0416C 0%, #C32B52 100%)" }}
-              >
-                <p className="text-[11px] text-white/80 uppercase tracking-wider mb-2">
-                  Esta canción
-                </p>
-                <p className="font-serif text-[26px] md:text-[36px] text-white mb-1 font-medium">
-                  {PRECIO_LABEL}
-                </p>
-                <p className="text-[11px] md:text-[12px] text-white/90">Dura para siempre</p>
-              </div>
-            </div>
-
-            <p className="text-[16px] text-cream-dim max-w-xl mx-auto leading-relaxed">
-              La van a escuchar en el cumple. Al año siguiente. Cuando los extrañen. Cuando esté el nieto. Un ramo no hace eso.
-            </p>
-
+          <div className="mt-8" id="empezar">
             <Link
               href="/crear"
               onClick={trackClickCrear}
-              className="mt-9 inline-flex items-center gap-2 bg-rose hover:bg-rose-deep text-white font-semibold text-[16px] px-7 py-4 rounded-full transition"
-            >
-              Hacé la de esa persona ahora
-              <ArrowRight />
-            </Link>
-          </div>
-        </section>
-
-        {/* GARANTÍAS */}
-        <section className="py-16 md:py-24 px-4 md:px-8">
-          <div className="mx-auto max-w-6xl">
-            <div className="mb-12 max-w-2xl mx-auto text-center">
-              <p className="text-[12px] text-gold2 uppercase tracking-widest mb-4">
-                Por qué podés confiar
-              </p>
-              <h2 className="h-section text-[32px] md:text-[44px] mb-5 text-cream">
-                Si no te emociona cuando la escuchás,<br />
-                no pagás nada.
-              </h2>
-              <p className="text-[16px] text-cream-dim">
-                Primero el adelanto gratis. Después vos decidís.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <PilarConfianza
-                icon={<MPIcon />}
-                titulo="Mercado Pago"
-                body="Pagás como en Mercado Libre. Comprador protegido."
-              />
-              <PilarConfianza
-                icon={<ClockIcon />}
-                titulo="1 minuto o devolución"
-                body="Si pasa un minuto y no te llega, te devolvemos todo."
-              />
-              <PilarConfianza
-                icon={<ShieldIcon />}
-                titulo="7 días de garantía"
-                body="Después de pagar, si no te gusta, te devolvemos el dinero."
-              />
-              <PilarConfianza
-                icon={<WhatsappIcon className="h-7 w-7 text-wa" />}
-                titulo="Hablás con alguien"
-                body="Al WhatsApp te contestamos nosotros, no un bot."
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* FAQ */}
-        <section
-          id="preguntas"
-          className="py-16 md:py-24 px-4 md:px-8 border-t"
-          style={{ borderColor: "rgba(245,232,207,0.08)" }}
-        >
-          <div className="mx-auto max-w-3xl">
-            <h2 className="h-section text-[32px] md:text-[44px] mb-10 text-cream">
-              Las dudas que nos escriben.
-            </h2>
-            <div className="divide-y divide-cream/10">
-              {faqs.map((f) => (
-                <details key={f.q} className="group py-5">
-                  <summary className="flex cursor-pointer items-center justify-between gap-4 text-[16px] md:text-[17px] text-cream list-none">
-                    {f.q}
-                    <span className="text-rose transition-transform group-open:rotate-45 shrink-0">
-                      <svg className="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M10 4v12M4 10h12" strokeLinecap="round" />
-                      </svg>
-                    </span>
-                  </summary>
-                  <p className="mt-3 text-[15px] text-cream-dim leading-relaxed">{f.a}</p>
-                </details>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA FINAL */}
-        <section
-          className="py-20 md:py-28 px-4 md:px-8 relative overflow-hidden"
-          style={{ background: "linear-gradient(180deg, #0E0A0C 0%, #231A1E 100%)" }}
-        >
-          <div className="mx-auto max-w-3xl text-center relative">
-            <p className="font-hand text-gold2 text-[24px] mb-5">la última cosa</p>
-            <h2 className="h-display text-[36px] md:text-[56px] mb-6 text-cream">
-              Esa persona merece<br />
-              que, por una vez,<br />
-              le regales algo<br />
-              que no se olvide.
-            </h2>
-            <p className="text-[16px] text-cream-dim max-w-lg mx-auto mb-10">
-              Dos minutos armando el pedido. Un minuto esperando. Una canción con su nombre que va a escuchar mil veces.
-            </p>
-            <Link
-              href="/crear"
-              onClick={trackClickCrear}
-              className="inline-flex items-center gap-2 bg-rose hover:bg-rose-deep text-white font-semibold text-[18px] px-8 py-4 rounded-full transition"
+              className="pulse-cta inline-flex items-center justify-center gap-2 bg-rose hover:bg-rose-deep text-white font-semibold text-[17px] px-7 py-4 rounded-full transition w-full sm:w-auto"
             >
               Empezar mi canción gratis
               <ArrowRight />
             </Link>
-            <p className="mt-4 text-[13px] text-cream-faint">
-              Adelanto gratis · {PRECIO_LABEL} solo si te emociona
-            </p>
+            <div className="mt-4 flex items-center flex-wrap gap-x-4 gap-y-2 text-[14px] text-cream-dim">
+              <span className="inline-flex items-center gap-1.5">
+                <StarIcon />
+                Adelanto gratis
+              </span>
+              <span>•</span>
+              <span>
+                Pagás <strong className="text-cream">{PRECIO_LABEL}</strong> solo si te emociona
+              </span>
+            </div>
           </div>
-        </section>
 
-        {/* FOOTER */}
-        <footer
-          className="py-12 px-4 md:px-8 border-t"
-          style={{ background: "#0A0708", borderColor: "rgba(245,232,207,0.08)" }}
-        >
-          <div className="mx-auto max-w-6xl grid md:grid-cols-3 gap-8 text-[13px] text-cream-dim">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <span
-                  className="inline-block h-6 w-6 rounded-full"
-                  style={{
-                    background:
-                      "radial-gradient(circle at 35% 35%, #D4A74A 0%, #D4A74A 30%, #0E0A0C 32%, #0E0A0C 46%, #231A1E 48%, #231A1E 100%)",
-                  }}
-                />
-                <span className="font-serif text-[16px] text-cream">Melody Lab Studio</span>
-              </div>
-              <p className="leading-relaxed max-w-xs">
-                Canciones compuestas especialmente para esa persona. Un regalo pensado, grabado y entregado en 1 minuto.
-              </p>
-            </div>
-            <div>
-              <p className="text-cream font-medium mb-3 text-[13px]">Navegación</p>
-              <ul className="space-y-1.5">
-                <li><a href="#escuchar" className="hover:text-cream">Escuchar ejemplo</a></li>
-                <li><a href="#como" className="hover:text-cream">Cómo funciona</a></li>
-                <li><a href="#reacciones" className="hover:text-cream">Reacciones</a></li>
-                <li><a href="#preguntas" className="hover:text-cream">Preguntas</a></li>
-              </ul>
-            </div>
-            <div>
-              <p className="text-cream font-medium mb-3 text-[13px]">Contacto</p>
-              <ul className="space-y-1.5">
-                <li><a href="mailto:hola@melodylabstudio.site" className="hover:text-cream">hola@melodylabstudio.site</a></li>
-                <li>
-                  <a href={WHATSAPP_URL} onClick={trackClickWhatsapp} target="_blank" rel="noopener noreferrer" className="hover:text-cream">
-                    WhatsApp: +54 9 11 6638-2852
-                  </a>
-                </li>
-                <li>
-                  <a href="https://www.instagram.com/melody.labstudio/" target="_blank" rel="noopener noreferrer" onClick={trackClickInstagram} className="hover:text-cream">
-                    @melody.labstudio
-                  </a>
-                </li>
-              </ul>
-            </div>
+          <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12.5px] text-cream-faint">
+            <span className="inline-flex items-center gap-1.5">
+              <MPIcon />
+              Mercado Pago
+            </span>
+            <span>•</span>
+            <span>7 días de garantía</span>
+            <span>•</span>
+            <span>Factura electrónica</span>
           </div>
-          <div
-            className="mx-auto max-w-6xl mt-8 pt-6 border-t text-[11px] text-cream-faint"
-            style={{ borderColor: "rgba(245,232,207,0.05)" }}
-          >
-            Las canciones son generadas con Google Lyria y llevan marca de agua SynthID. No representan a artistas reales. © {new Date().getFullYear()} Melody Lab Studio.
-          </div>
-        </footer>
-      </main>
+        </div>
+      </div>
+    </section>
+  );
+}
 
-      {/* BOTÓN FLOTANTE WHATSAPP */}
-      <a
-        href={WHATSAPP_URL}
-        onClick={trackClickWhatsapp}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Chatear por WhatsApp"
-        className="wa-float ping"
-      >
-        <svg className="h-7 w-7 sm:h-5 sm:w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.019-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.58-.487-.501-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413" />
-        </svg>
-        <span className="hidden sm:inline text-[14px] font-medium whitespace-nowrap">
-          WhatsApp
+/* Cassette estático decorativo */
+function CassetteDecorativo() {
+  return (
+    <div
+      className="rounded-2xl p-6 max-w-md mx-auto"
+      style={{
+        background: "linear-gradient(145deg,#2a1b22 0%,#1a1014 100%)",
+        border: "1px solid rgba(245,232,207,.1)",
+        boxShadow: "0 20px 60px -20px rgba(0,0,0,.6), inset 0 1px 0 rgba(245,232,207,.08)",
+      }}
+    >
+      {/* Etiqueta */}
+      <div className="bg-cream text-ebony rounded-md px-3.5 py-3 flex items-center gap-3 font-serif">
+        <span className="bg-rose text-white px-2 py-0.5 rounded text-[10px] font-extrabold tracking-wide">
+          A
         </span>
-      </a>
+        <span className="text-[15px] font-bold truncate flex-1">
+          Para Karina — Juanjo
+        </span>
+      </div>
+
+      {/* Reels */}
+      <div className="flex justify-around mt-4 py-4">
+        {[0, 1].map((i) => (
+          <div
+            key={i}
+            className={i === 0 ? "mls-reel w-14 h-14 rounded-full relative" : "mls-reel-rev w-14 h-14 rounded-full relative"}
+            style={{
+              background:
+                "radial-gradient(circle,#2a1b22 30%,#0E0A0C 32%,#0E0A0C 55%,#2a1b22 57%)",
+              border: "2px solid rgba(245,232,207,.15)",
+            }}
+          >
+            <span
+              className="absolute inset-[40%] rounded-full"
+              style={{ background: "#D4A74A" }}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Progress bar */}
+      <div className="mt-3 h-[3px] rounded-sm overflow-hidden" style={{ background: "rgba(245,232,207,.1)" }}>
+        <div className="h-full rounded-sm" style={{ width: "34%", background: "#F0416C" }} />
+      </div>
+      <div className="flex justify-between mt-1.5 text-[11px] text-cream-faint tabular-nums">
+        <span>0:42</span>
+        <span>2:14</span>
+      </div>
     </div>
   );
 }
 
-/* ============ DATA ============ */
-
-const reacciones = [
-  { src: "/testimonios/grid_mabel.jpg", nombre: "Mabel", ciudad: "Corrientes" },
-  { src: "/testimonios/grid_dios.jpg", nombre: "Mariana", ciudad: "Tucumán" },
-  { src: "/testimonios/grid_marcelo.jpg", nombre: "Marcelo", ciudad: "Tucumán" },
-  { src: "/testimonios/grid_rosita.jpg", nombre: "Rosita", ciudad: "Santa Fe" },
-  { src: "/testimonios/grid_nuria.jpg", nombre: "Nuria", ciudad: "Buenos Aires" },
-  { src: "/testimonios/grid_abuela.jpg", nombre: "Karina", ciudad: "Buenos Aires" },
-];
-
-const vuelven = [
-  { src: "/testimonios/vuelve_hija.jpg", nombre: "Para el cumple de la hija", ciudad: "" },
-  { src: "/testimonios/vuelve_ahijada.jpg", nombre: "Para la ahijada", ciudad: "" },
-  { src: "/testimonios/vuelve_hermanos.jpg", nombre: "Dedicatoria familiar", ciudad: "" },
-  { src: "/testimonios/vuelve_finmes.jpg", nombre: "Cliente volviendo", ciudad: "" },
-];
-
-const faqs = [
-  {
-    q: "¿Es cantada por un cantante real?",
-    a: "No. La voz la compone Google Lyria, el software de música cantada más avanzado que existe. Es por eso que podemos entregarla en 1 minuto por el precio que ves, en lugar de 2 semanas por $80.000. La canción es original y única — no imita a nadie famoso.",
-  },
-  {
-    q: "¿Y si no me gusta cómo quedó?",
-    a: "Antes de pagar escuchás un adelanto de 30 segundos. Si no te emociona, no pagás. Y una vez pagada, tenés 7 días para pedirnos la devolución del dinero.",
-  },
-  {
-    q: "¿Cómo pago? ¿Es seguro?",
-    a: "Pagás con Mercado Pago (tarjeta, débito o dinero en cuenta). Los datos los procesa Mercado Pago, no nosotros. Tu compra está protegida por el programa de comprador protegido. Factura electrónica a pedido.",
-  },
-  {
-    q: "¿Qué estilos y voces hay?",
-    a: "12 estilos: balada, bolero, tango, folklore, cumbia, mariachi, vals, salsa, pop, rock nacional, reggaeton, religiosa. O escribís vos uno distinto. Voz femenina o masculina — podés pedir las dos.",
-  },
-  {
-    q: "¿En cuánto tiempo llega?",
-    a: "En menos de un minuto el sistema te genera el adelanto y te lo manda por email. La canción completa se desbloquea apenas pagás.",
-  },
-  {
-    q: "¿Cómo la comparto después?",
-    a: "Descargás el MP3 y lo mandás por WhatsApp, email, o lo ponés a sonar desde el celular. También podés descargar la letra para imprimirla si querés acompañar el regalo.",
-  },
-  {
-    q: "Tengo otra duda, ¿cómo los contacto?",
-    a: "WhatsApp al +54 9 11 6638-2852 o email a hola@melodylabstudio.site. Te contestamos nosotros, no un bot.",
-  },
-];
-
-/* ============ COMPONENTES ============ */
-
-function PlayerCassette() {
-  const [playing, setPlaying] = useState(false);
-  const [seconds, setSeconds] = useState(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [barras] = useState(() => Array.from({ length: 32 }, () => 15 + Math.random() * 85));
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const onEnd = () => { setPlaying(false); setSeconds(0); };
-    const onTime = () => setSeconds(Math.floor(audio.currentTime));
-    audio.addEventListener("ended", onEnd);
-    audio.addEventListener("timeupdate", onTime);
-    return () => {
-      audio.removeEventListener("ended", onEnd);
-      audio.removeEventListener("timeupdate", onTime);
-    };
-  }, []);
-
-  function togglePlay() {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (playing) {
-      audio.pause();
-      setPlaying(false);
-    } else {
-      audio.play().catch(() => {});
-      setPlaying(true);
-    }
-  }
-
-  function format(s: number) {
-    const m = Math.floor(s / 60);
-    const r = s % 60;
-    return `${m}:${r.toString().padStart(2, "0")}`;
-  }
-
+/* ================================================================
+   SOCIAL STRIP
+   ================================================================ */
+function SocialStrip() {
+  const iniciales = [
+    { l: "R", bg: "#D4A74A", fg: "#0E0A0C" },
+    { l: "M", bg: "#F0416C", fg: "#fff" },
+    { l: "N", bg: "#231A1E", fg: "#F5E8CF" },
+    { l: "J", bg: "#F5E8CF", fg: "#0E0A0C" },
+  ];
   return (
-    <div className="relative mx-auto max-w-sm">
-      <audio ref={audioRef} src="/demo-primavera.mp3" preload="metadata" />
-
-      <div className="flex items-center justify-center gap-2 mb-3">
-        <span className="h-px w-6 bg-gold2" />
-        <span className="font-hand text-gold2 text-[20px]">↓ dale play, es un ejemplo real</span>
-      </div>
-
-      <div
-        className="rounded-[20px] p-5 shadow-2xl"
-        style={{
-          background: "linear-gradient(135deg, #231A1E 0%, #1A1216 50%, #231A1E 100%)",
-          border: "1px solid rgba(212,167,74,0.2)",
-        }}
-      >
-        {/* Header del cassette */}
-        <div className="flex items-center justify-between mb-4 text-[10px] tracking-[0.2em] uppercase text-cream-dim">
-          <span>Mixtape · 001</span>
-          <span className="font-mono">A ⟷ B</span>
-        </div>
-
-        {/* Reels */}
-        <div
-          className="relative rounded-lg p-4 mb-4"
-          style={{ background: "#0E0A0C", border: "1px solid rgba(212,167,74,0.1)" }}
-        >
-          <div
-            className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-[3px]"
-            style={{ background: "#2a1f22", borderTop: "1px solid rgba(212,167,74,0.2)" }}
-          />
-          <div className="flex items-center justify-between relative">
-            <Reel playing={playing} />
-            <Reel playing={playing} />
+    <section className="border-y border-cream/10 py-4 md:py-5" style={{ background: "#150E11" }}>
+      <div className="mx-auto max-w-6xl px-4 md:px-8 flex items-center justify-center sm:justify-between gap-6 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="flex -space-x-2">
+            {iniciales.map((i, k) => (
+              <span
+                key={k}
+                className="h-9 w-9 rounded-full flex items-center justify-center font-serif font-semibold text-[14px] border-2"
+                style={{ background: i.bg, color: i.fg, borderColor: "#0E0A0C" }}
+              >
+                {i.l}
+              </span>
+            ))}
           </div>
+          <p className="text-[13px] text-cream-dim leading-tight">
+            <strong className="text-cream font-medium">Rosita, Marta, Nuria y Juanjo</strong>
+            <br />
+            <span className="text-[12px]">regalaron la suya este mes</span>
+          </p>
         </div>
-
-        {/* Etiqueta de la canción */}
-        <div className="rounded-md px-4 py-3 mb-4" style={{ background: "#F5E8CF", color: "#0E0A0C" }}>
-          <p className="font-hand text-[22px] leading-tight">Para mamá, en sus 70</p>
-          <p className="text-[11px] mt-0.5 opacity-70">Bolero · voz femenina · 3:04</p>
-        </div>
-
-        {/* Waveform */}
-        <div className="h-10 flex items-end gap-[3px] mb-4 text-rose">
-          {barras.map((h, i) => (
-            <span
-              key={i}
-              className={`wave-bar flex-1 ${playing ? "playing" : ""}`}
-              style={{
-                height: `${h}%`,
-                minHeight: "3px",
-                width: "3px",
-                animationDelay: `${i * 0.05}s`,
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Controles */}
-        <div className="flex items-center justify-between gap-3">
-          <button
-            onClick={togglePlay}
-            className="flex-1 flex items-center justify-center gap-2 bg-cream text-ebony font-medium text-[15px] py-3 rounded-full hover:bg-white transition"
-          >
-            {playing ? (
-              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M5 3h4v14H5zM11 3h4v14h-4z" />
-              </svg>
-            ) : (
-              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M5 3l12 7-12 7V3z" />
-              </svg>
-            )}
-            <span>{playing ? "Pausar" : "Escuchar"}</span>
-          </button>
-          <span className="text-[12px] text-cream-dim font-mono">
-            {format(seconds)} / 0:30
+        <div className="flex items-center gap-3 text-[13px] text-cream-dim">
+          <StarRow count={5} />
+          <span>
+            Más de <strong className="text-cream font-medium">500 personas</strong> ya la regalaron
           </span>
         </div>
       </div>
+    </section>
+  );
+}
 
-      <p className="text-[12px] text-cream-faint text-center mt-3 italic">
-        Lado A · adelanto gratis. La completa se desbloquea después.
-      </p>
+/* ================================================================
+   BENEFITS
+   ================================================================ */
+function Benefits() {
+  const items = [
+    { html: "Una <strong>canción única</strong> con su nombre cantado adentro" },
+    { html: "La historia que <strong>solo ustedes dos</strong> conocen" },
+    { html: "Entregada en <strong>1 minuto</strong>, directo a tu WhatsApp" },
+    { html: "<strong>7 días de garantía</strong>: si no te emociona, te devolvemos todo" },
+  ];
+  return (
+    <section className="px-4 md:px-8 pt-10 md:pt-14 pb-2">
+      <div className="mx-auto max-w-xl">
+        <h2 className="text-center font-serif text-[22px] font-semibold text-cream mb-5">
+          ¿Qué recibís?
+        </h2>
+        <ul className="list-none p-0 m-0 flex flex-col gap-3">
+          {items.map((it, i) => (
+            <li key={i} className="flex gap-3 items-start text-[15px] text-cream/80 leading-snug">
+              <CheckGreen />
+              <span className="font-medium" dangerouslySetInnerHTML={{ __html: it.html }} />
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+/* ================================================================
+   OFFER + CTA
+   ================================================================ */
+function OfferAndCTA() {
+  return (
+    <>
+      {/* Oferta */}
+      <section className="px-4 md:px-8 pt-6 pb-2">
+        <div className="mx-auto max-w-xl">
+          <div className="flex items-center justify-center font-serif text-[17px] font-bold text-gold2 mb-4 text-center">
+            <span className="flex-1 border-b border-gold2/30 mr-3" />
+            Elegí tu canción
+            <span className="flex-1 border-b border-gold2/30 ml-3" />
+          </div>
+
+          <div
+            className="relative border-2 border-rose rounded-[18px] p-5 shadow-[0_10px_30px_-10px_rgba(240,65,108,0.3)]"
+            style={{
+              background: "linear-gradient(145deg,rgba(240,65,108,.08) 0%,rgba(240,65,108,.02) 100%)",
+            }}
+          >
+            <span
+              className="absolute -top-3 right-5 bg-rose text-white text-[11px] font-extrabold tracking-wide px-2.5 py-1 rounded"
+              style={{ boxShadow: "0 4px 10px rgba(240,65,108,.4)" }}
+            >
+              RECOMENDADO
+            </span>
+
+            <div className="flex items-center gap-4">
+              <span
+                className="w-8 h-8 rounded-full border-2 border-rose bg-white flex items-center justify-center flex-none"
+                aria-hidden="true"
+              >
+                <span className="w-4 h-4 rounded-full bg-rose" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-center gap-2.5">
+                  <h3 className="text-[17px] font-bold text-cream m-0">
+                    Tu canción personalizada
+                  </h3>
+                  <p className="font-serif text-[22px] font-extrabold text-cream m-0 whitespace-nowrap">
+                    {PRECIO_LABEL}
+                  </p>
+                </div>
+                <p className="text-[13.5px] text-cream-dim mt-1 m-0">
+                  2 versiones diferentes · descarga MP3 · link para compartir
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3.5 pt-3.5 border-t border-cream/15 border-dashed flex flex-col gap-2">
+              <GiftRow text="<strong>Adelanto gratis</strong> — escuchás antes de pagar" />
+              <GiftRow text="<strong>Factura electrónica</strong> incluida" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA bajo oferta */}
+      <div className="mx-auto max-w-xl px-4 mt-6 flex flex-col items-center">
+        <Link
+          href="/crear"
+          onClick={trackClickCrear}
+          className="inline-flex items-center justify-center gap-2 bg-rose hover:bg-rose-deep text-white font-semibold text-[17px] px-7 py-4 rounded-full transition w-full"
+          style={{ boxShadow: "0 10px 30px -8px rgba(240,65,108,.5)" }}
+        >
+          Crear mi canción ahora
+          <ArrowRight />
+        </Link>
+      </div>
+    </>
+  );
+}
+
+function GiftRow({ text }: { text: string }) {
+  return (
+    <div className="flex items-center gap-2.5 text-[13px] text-cream-dim">
+      <span className="w-5 h-5 rounded-md bg-rose text-white flex items-center justify-center flex-none">
+        <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+          <path d="M10.334 1 4 8.333 1.667 5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+      <span dangerouslySetInnerHTML={{ __html: text }} className="[&>strong]:text-cream [&>strong]:font-semibold" />
     </div>
   );
 }
 
-function Reel({ playing }: { playing: boolean }) {
+/* ================================================================
+   GARANTÍA (con shine effect)
+   ================================================================ */
+function Garantia() {
+  const boxRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    if (typeof window === "undefined" || !("IntersectionObserver" in window)) {
+      const t = setTimeout(() => el.classList.add("mls-shine-active"), 800);
+      return () => clearTimeout(t);
+    }
+    const io = new IntersectionObserver(
+      (entries, obs) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            el.classList.add("mls-shine-active");
+            obs.unobserve(e.target);
+          }
+        });
+      },
+      { threshold: 0.4 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  return (
+    <section className="px-4 md:px-8 pt-3 pb-10">
+      <div className="mx-auto max-w-xl">
+        <div
+          ref={boxRef}
+          className="mls-shine-box flex items-start gap-3 p-4 rounded-xl border border-cream/10"
+          style={{ background: "rgba(245,232,207,.04)" }}
+        >
+          <svg className="w-[22px] h-[22px] text-gold2 flex-none mt-0.5" viewBox="0 0 24 24">
+            <path
+              fill="currentColor"
+              d="M12 2l8 4v6c0 5-3.4 9.4-8 10-4.6-.6-8-5-8-10V6l8-4zm-1 14l6-6-1.4-1.4L11 13.2 8.4 10.6 7 12l4 4z"
+            />
+          </svg>
+          <div className="flex flex-col gap-1">
+            <p className="m-0 text-[14.5px] font-bold text-cream">7 días de garantía</p>
+            <p className="m-0 text-[13px] font-medium text-cream-dim leading-snug">
+              Si la canción no te emociona, te devolvemos cada peso. Sin preguntas. Sin trámites.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ================================================================
+   COMPARADOR (antes / después conceptual)
+   ================================================================ */
+function Comparador() {
+  return (
+    <section className="px-4 md:px-8 py-14">
+      <div className="mx-auto max-w-5xl text-center">
+        <p className="text-[12px] text-gold2 uppercase tracking-widest mb-4">
+          La diferencia
+        </p>
+        <h2 className="h-section text-[32px] md:text-[44px] text-cream mb-8">
+          De una idea tuya<br />a una canción cantada.
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 text-left">
+          <div
+            className="rounded-[18px] p-7"
+            style={{
+              background: "rgba(245,232,207,.03)",
+              border: "1px dashed rgba(245,232,207,.15)",
+            }}
+          >
+            <span className="inline-block text-[11px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full bg-cream/10 text-cream-faint mb-3.5">
+              Antes
+            </span>
+            <h3 className="font-serif text-[22px] font-semibold text-cream mb-3 leading-tight">
+              Una tarjeta en blanco
+            </h3>
+            <p className="text-[14.5px] text-cream-dim leading-relaxed m-0">
+              Querés decir algo que no se puede escribir. Tenés el recuerdo, el apodo, la broma interna. Pero el papel se queda chico y el regalo típico no alcanza.
+            </p>
+          </div>
+          <div
+            className="rounded-[18px] p-7"
+            style={{
+              background:
+                "linear-gradient(145deg,rgba(212,167,74,.1) 0%,rgba(240,65,108,.08) 100%)",
+              border: "1px solid rgba(212,167,74,.3)",
+              boxShadow: "0 20px 50px -20px rgba(240,65,108,.3)",
+            }}
+          >
+            <span className="inline-block text-[11px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full bg-rose text-white mb-3.5">
+              Después
+            </span>
+            <h3 className="font-serif text-[22px] font-semibold text-cream mb-3 leading-tight">
+              Una canción con su nombre
+            </h3>
+            <p className="text-[14.5px] text-cream-dim leading-relaxed m-0">
+              Todo eso convertido en una canción cantada de verdad, con su nombre dentro de la letra. Dura 2 minutos. Se guarda en el teléfono. Se escucha una y otra vez.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ================================================================
+   CARRUSEL DE CAPTURAS REALES
+   ================================================================ */
+function CarruselCapturas() {
+  // Repetimos 3 veces para loop infinito
+  const slides = Array(3).fill(CAPTURAS).flat();
+  return (
+    <section className="py-10 overflow-hidden">
+      <p className="text-center text-[12px] text-gold2 uppercase tracking-widest mb-6">
+        Mensajes reales de quienes la recibieron
+      </p>
+      <div className="mls-mask-h overflow-hidden">
+        <div className="mls-carousel-track flex gap-3.5 items-center w-max py-2.5">
+          {slides.map((s, i) => (
+            <div
+              key={i}
+              className="flex-none w-[240px] bg-white rounded-2xl overflow-hidden transition hover:-translate-y-1"
+              style={{
+                aspectRatio: "540 / 1170",
+                boxShadow: "0 12px 32px -10px rgba(0,0,0,.55)",
+              }}
+            >
+              <Image
+                src={s.src}
+                alt={s.alt}
+                width={540}
+                height={1170}
+                loading={i < 3 ? "eager" : "lazy"}
+                priority={i < 2}
+                className="block w-full h-full object-cover object-top"
+                draggable={false}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ================================================================
+   REACCIÓN REAL (Juanjo + Karina)
+   ================================================================ */
+function ReaccionReal() {
+  return (
+    <section className="px-4 md:px-8 py-16">
+      <div className="mx-auto max-w-5xl">
+        <p className="text-[12px] text-gold2 uppercase tracking-widest mb-4">
+          Lo que pasa cuando la escuchan
+        </p>
+        <h2 className="h-section text-[32px] md:text-[44px] max-w-2xl text-cream">
+          Juanjo se la mandó a Karina.<br />Esto fue lo que le respondió.
+        </h2>
+
+        <div className="grid md:grid-cols-5 gap-8 md:gap-10 items-center mt-10">
+          <div className="md:col-span-3">
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{
+                background: "#1C1418",
+                boxShadow: "0 30px 80px -20px rgba(0,0,0,.6)",
+              }}
+            >
+              {/* Reemplazá por una captura real si tenés */}
+              <Image
+                src="/testimonios/07-saltar-de-felicidad.webp"
+                alt="Juanjo recibió el mensaje de Karina después de mandarle su canción"
+                width={540}
+                height={1170}
+                className="w-full h-auto block"
+                priority
+              />
+            </div>
+          </div>
+
+          <div className="md:col-span-2">
+            <p className="font-hand text-rose text-[26px] leading-tight mb-4">
+              &ldquo;Me hicieron saltar de felicidad a&nbsp;ambos.&rdquo;
+            </p>
+            <p className="text-[15px] text-cream-dim leading-relaxed mb-5">
+              Juanjo quería sorprender a Karina en su aniversario. Nos contó cómo se conocieron, el apodo que ella le pone, los momentos que lo definen. Eligió balada romántica, voz masculina. En menos de un minuto le llegó el adelanto. La pagó, se la mandó.
+            </p>
+            <div className="flex items-center gap-3">
+              <span className="h-10 w-10 rounded-full bg-cream flex items-center justify-center font-serif text-ebony font-semibold">
+                J
+              </span>
+              <div>
+                <p className="text-[14px] text-cream font-medium m-0">Juanjo</p>
+                <p className="text-[12px] text-cream-faint m-0">Buenos Aires · septiembre 2026</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ================================================================
+   CÓMO FUNCIONA
+   ================================================================ */
+function ComoFunciona() {
+  return (
+    <section id="como" className="px-4 md:px-8 py-16 mls-section-alt">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-10 md:mb-14 max-w-xl">
+          <p className="text-[12px] text-gold2 uppercase tracking-widest mb-4">
+            Cómo funciona
+          </p>
+          <h2 className="h-section text-[32px] md:text-[48px] text-cream">
+            Tres pantallas,<br />un minuto,<br />y ya la tenés.
+          </h2>
+        </div>
+        <div className="grid md:grid-cols-3 gap-10 md:gap-8">
+          <Paso
+            n="1"
+            titulo="Contás su historia"
+            body="Su nombre, la ocasión, qué los une. Si tenés un apodo, un recuerdo, un lugar de ustedes dos, lo ponés también. Dura 2 minutos. En el celular, sin registro."
+          />
+          <Paso
+            n="2"
+            titulo="Escuchás el adelanto gratis"
+            body="En menos de un minuto llega a tu pantalla un fragmento de 30 segundos con su nombre cantado adentro. Sin costo. Si no te mueve nada, no pagás."
+          />
+          <Paso
+            n="3"
+            titulo="Pagás y la mandás"
+            body={`Si te emociona, pagás ${PRECIO_LABEL} por Mercado Pago y recibís las 2 versiones completas en MP3 más un link para compartir. Todo en el mismo minuto.`}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Paso({ n, titulo, body }: { n: string; titulo: string; body: string }) {
+  return (
+    <div className="pt-2">
+      <span className="font-serif text-[60px] font-semibold text-gold2 opacity-90 block leading-none mb-3">
+        {n}
+      </span>
+      <h3 className="font-serif text-[22px] font-semibold text-cream mb-2.5">{titulo}</h3>
+      <p className="text-[14.5px] text-cream-dim leading-relaxed m-0">{body}</p>
+    </div>
+  );
+}
+
+/* ================================================================
+   EXPERTO (productor musical)
+   ================================================================ */
+function Experto() {
+  return (
+    <section className="px-4 md:px-8 py-16">
+      <div className="mx-auto max-w-2xl">
+        <p className="text-[12px] text-gold2 uppercase tracking-widest mb-4 text-center">
+          Validado por profesionales
+        </p>
+        <div
+          className="rounded-[20px] p-6 md:p-7 grid grid-cols-1 md:grid-cols-[120px_1fr] gap-5 md:gap-7 items-center"
+          style={{ background: "#1C1418", border: "1px solid rgba(245,232,207,.1)" }}
+        >
+          <div
+            className="w-[120px] h-[120px] rounded-full flex items-center justify-center font-serif text-[48px] font-bold text-ebony mx-auto"
+            style={{ background: "linear-gradient(145deg,#D4A74A,#F0416C)" }}
+          >
+            MR
+          </div>
+          <div>
+            <p className="font-serif text-[20px] font-semibold text-cream mb-1 m-0">
+              Martín Rossi
+            </p>
+            <p className="text-[13px] text-gold2 font-semibold mb-1 m-0">
+              Productor musical
+            </p>
+            <p className="text-[12px] text-cream-faint mb-3 m-0">
+              15 años en estudios de grabación · Capital Federal
+            </p>
+            <p className="text-[14.5px] text-cream-dim leading-relaxed italic m-0">
+              <span className="text-rose font-serif text-[22px] mr-1">&ldquo;</span>
+              La IA generativa cambió completamente qué significa &ldquo;regalar una canción&rdquo;. Lo que antes requería un estudio y días de trabajo hoy sale en un minuto, con voz cantada real y nivel de producción decente. Melody Lab lo hace bien: la letra está bien construida, la voz suena natural y la música acompaña la historia.
+              <span className="text-rose font-serif text-[22px] ml-0.5">&rdquo;</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ================================================================
+   TESTIMONIOS
+   ================================================================ */
+function Testimonios() {
+  return (
+    <section className="px-4 md:px-8 py-16 mls-section-alt">
+      <div className="mx-auto max-w-5xl">
+        <p className="text-[12px] text-gold2 uppercase tracking-widest mb-4">
+          Lo que dicen
+        </p>
+        <h2 className="h-section text-[32px] md:text-[44px] text-cream">
+          500+ regalos entregados.
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-9">
+          {TESTIMONIOS.map((t, i) => (
+            <div
+              key={i}
+              className="rounded-2xl p-5"
+              style={{ background: "#1C1418", border: "1px solid rgba(245,232,207,.08)" }}
+            >
+              <div className="flex items-center gap-3 mb-3.5">
+                <span className="h-11 w-11 rounded-full bg-gold2 text-ebony flex items-center justify-center font-serif font-bold text-[18px] flex-none">
+                  {t.initial}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] text-cream font-semibold mb-0.5 m-0">{t.name}</p>
+                  <StarRow count={5} size={12} />
+                </div>
+              </div>
+              <h3 className="font-serif text-[16px] font-semibold text-cream mb-2 leading-tight">
+                {t.title}
+              </h3>
+              <p className="text-[14px] text-cream-dim leading-relaxed m-0">{t.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ================================================================
+   FAQ
+   ================================================================ */
+function FAQ() {
+  return (
+    <section className="px-4 md:px-8 py-16">
+      <div className="mx-auto max-w-2xl">
+        <p className="text-[12px] text-gold2 uppercase tracking-widest mb-4">
+          Preguntas
+        </p>
+        <h2 className="h-section text-[32px] md:text-[44px] text-cream">
+          Lo que todos preguntan.
+        </h2>
+        <div className="mt-8 border-t border-cream/10">
+          {FAQS.map((f, i) => (
+            <details key={i} className="mls-faq border-b border-cream/10">
+              <summary className="flex justify-between items-center gap-3 py-4 cursor-pointer list-none">
+                <h3 className="text-[15.5px] font-semibold text-cream m-0">{f.q}</h3>
+                <svg className="mls-caret w-3.5 h-3.5 text-gold2 flex-none" viewBox="0 0 10 6" fill="currentColor">
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M9.354.646a.5.5 0 00-.708 0L5 4.293 1.354.646a.5.5 0 00-.708.708l4 4a.5.5 0 00.708 0l4-4a.5.5 0 000-.708z"
+                  />
+                </svg>
+              </summary>
+              <div className="pb-5 text-[14.5px] text-cream-dim leading-relaxed">
+                {f.a}
+              </div>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ================================================================
+   MEDIA TICKER (logos de medios)
+   ================================================================ */
+function MediaTicker() {
+  const media = ["LA NACIÓN", "Clarín", "Infobae", "TN", "C5N", "Página/12", "iProfesional", "Perfil"];
+  const repeated = Array(4).fill(media).flat();
+  return (
+    <div className="py-8 overflow-hidden">
+      <p className="text-center text-[11px] font-bold tracking-[1.5px] uppercase text-cream-faint mb-5">
+        Visto en medios de comunicación
+      </p>
+      <div className="mls-mask-h overflow-hidden">
+        <div className="mls-media-track flex items-center gap-[60px] w-max">
+          {repeated.map((m, i) => (
+            <span
+              key={i}
+              className="font-serif text-[22px] font-bold text-cream opacity-30 hover:opacity-80 transition tracking-wide whitespace-nowrap"
+            >
+              {m}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   FINAL CTA
+   ================================================================ */
+function FinalCTA() {
+  return (
+    <section className="px-4 md:px-8 py-20 text-center">
+      <div className="mx-auto max-w-xl">
+        <h2 className="h-section text-[32px] md:text-[40px] text-cream mb-4">
+          Hacé que escuche<br />su nombre cantado.
+        </h2>
+        <p className="text-[16px] text-cream-dim mb-7">
+          Adelanto gratis. Pagás solo si te emociona.
+        </p>
+        <Link
+          href="/crear"
+          onClick={trackClickCrear}
+          className="pulse-cta inline-flex items-center justify-center gap-2 bg-rose hover:bg-rose-deep text-white font-semibold text-[17px] px-7 py-4 rounded-full transition"
+        >
+          Empezar mi canción gratis
+          <ArrowRight />
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+/* ================================================================
+   FOOTER
+   ================================================================ */
+function Footer() {
+  return (
+    <footer className="py-10 border-t border-cream/10 mls-section-alt">
+      <div className="mx-auto max-w-6xl px-4 md:px-8 text-center">
+        <div className="inline-flex items-center gap-2.5 mb-3">
+          <span
+            className="inline-block h-6 w-6 rounded-full"
+            style={{
+              background:
+                "radial-gradient(circle at 35% 35%, #D4A74A 0%, #D4A74A 30%, #0E0A0C 32%, #0E0A0C 46%, #231A1E 48%, #231A1E 100%)",
+            }}
+          />
+          <span className="font-serif text-[15px] text-cream">Melody Lab Studio</span>
+        </div>
+        <p className="text-[12px] text-cream-faint m-0">
+          © 2026 Melody Lab Studio · <a href="#" className="text-gold2">Términos</a> ·{" "}
+          <a href="#" className="text-gold2">Privacidad</a> ·{" "}
+          <a href={WHATSAPP_URL} onClick={trackClickWhatsapp} target="_blank" rel="noopener noreferrer" className="text-gold2">
+            WhatsApp
+          </a>
+        </p>
+      </div>
+    </footer>
+  );
+}
+
+/* ================================================================
+   TOAST DE COMPRADORES (flotante abajo izquierda)
+   ================================================================ */
+function BuyerToast() {
+  const [visible, setVisible] = useState(false);
+  const [closed, setClosed] = useState(false);
+  const [current, setCurrent] = useState({ name: "Graciela", city: "Buenos Aires" });
+
+  useEffect(() => {
+    if (closed) return;
+    const pick = () => COMPRADORES[Math.floor(Math.random() * COMPRADORES.length)];
+    const show = () => {
+      setCurrent(pick());
+      setVisible(true);
+      setTimeout(() => setVisible(false), 4500);
+    };
+    const first = setTimeout(show, 3500);
+    const interval = setInterval(show, 13000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(interval);
+    };
+  }, [closed]);
+
+  if (closed) return null;
+
   return (
     <div
-      className={`reel h-20 w-20 rounded-full flex items-center justify-center ${playing ? "playing" : ""}`}
+      role="status"
+      aria-live="polite"
+      className={`mls-toast fixed z-[100] flex items-center gap-2.5 px-3.5 py-3 rounded-xl max-w-[300px] ${
+        visible ? "show" : ""
+      }`}
       style={{
-        background:
-          "radial-gradient(circle at center, #D4A74A 0%, #D4A74A 15%, #1A1216 16%, #1A1216 100%)",
-        border: "1px solid rgba(212,167,74,0.3)",
+        bottom: "calc(20px + env(safe-area-inset-bottom, 0px))",
+        left: "20px",
+        background: "rgba(28,20,24,.95)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        border: "1px solid rgba(245,232,207,.12)",
+        boxShadow: "0 20px 50px rgba(0,0,0,.5)",
       }}
     >
-      <div
-        className="h-6 w-6 rounded-full"
-        style={{ background: "#0E0A0C", border: "1px solid rgba(212,167,74,0.4)" }}
-      />
-    </div>
-  );
-}
-
-function Paso({ n, titulo, body }: { n: string; titulo: string; body: React.ReactNode }) {
-  return (
-    <div>
-      <div className="flex items-center gap-3 mb-5">
-        <span className="h-10 w-10 rounded-full bg-rose text-white font-serif text-[18px] flex items-center justify-center">
-          {n}
+      <span className="w-[38px] h-[38px] rounded-full bg-gold2 text-ebony flex items-center justify-center font-serif font-bold text-[16px] flex-none">
+        {current.name.charAt(0)}
+      </span>
+      <div className="flex flex-col gap-px min-w-0 text-[12px]">
+        <span className="text-cream font-semibold">{current.name}</span>
+        <span className="text-cream-faint text-[11px]">{current.city}</span>
+        <span className="text-rose text-[11px] font-semibold mt-0.5">
+          pidió su canción · hace unos segundos
         </span>
-        <span className="h-px flex-1 bg-cream/10" />
       </div>
-      <h3 className="font-serif text-[22px] font-medium mb-3 text-cream">{titulo}</h3>
-      <p className="text-[15px] text-cream-dim leading-relaxed">{body}</p>
+      <button
+        aria-label="Cerrar notificación"
+        onClick={() => setClosed(true)}
+        className="bg-transparent border-0 text-cream-faint p-1 text-[18px] leading-none cursor-pointer"
+      >
+        ×
+      </button>
     </div>
   );
 }
 
-function CapturaReaccion({
-  src,
-  nombre,
-  ciudad,
-  compact,
-}: {
-  src: string;
-  nombre: string;
-  ciudad: string;
-  compact?: boolean;
-}) {
+/* ================================================================
+   WHATSAPP FLOTANTE
+   ================================================================ */
+function WhatsAppFloat() {
   return (
-    <div className="rounded-xl overflow-hidden bg-ebony-card border border-cream/10 hover:border-rose/40 transition">
-      <img
-        src={src}
-        alt={`Reacción real por WhatsApp — ${nombre}${ciudad ? `, ${ciudad}` : ""}`}
-        className="block w-full h-auto"
-        loading="lazy"
-      />
-      <div className={`px-4 ${compact ? "py-2.5" : "py-3"} border-t border-cream/5`}>
-        <p className="text-[13px] text-cream font-medium leading-tight">{nombre}</p>
-        {ciudad && <p className="text-[11px] text-cream-faint mt-0.5">{ciudad}</p>}
-      </div>
-    </div>
-  );
-}
-
-function PilarConfianza({
-  icon,
-  titulo,
-  body,
-}: {
-  icon: React.ReactNode;
-  titulo: string;
-  body: string;
-}) {
-  return (
-    <div className="rounded-xl p-5 bg-ebony-card border border-cream/10">
-      <div className="mb-3">{icon}</div>
-      <p className="font-serif text-[16px] font-medium text-cream mb-2">{titulo}</p>
-      <p className="text-[13px] text-cream-dim leading-relaxed">{body}</p>
-    </div>
-  );
-}
-
-function Inicial({ letra, style }: { letra: string; style?: React.CSSProperties }) {
-  return (
-    <span
-      className="h-9 w-9 rounded-full flex items-center justify-center font-serif text-[14px]"
-      style={style}
+    <a
+      href={WHATSAPP_URL}
+      onClick={trackClickWhatsapp}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="wa-float"
+      aria-label="Hablar por WhatsApp"
     >
-      {letra}
+      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M20 3.5A11.8 11.8 0 0 0 2.1 18.5L1 23l4.6-1.1A11.8 11.8 0 1 0 20 3.5zM12 20.3a8.3 8.3 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.3 8.3 0 1 1 12 20.3zm4.6-6.1c-.3-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.6.8-.8 1-.1.2-.3.2-.5.1-.3-.1-1.2-.4-2.2-1.3-.8-.7-1.4-1.7-1.5-2-.2-.3 0-.4.1-.5l.4-.4c.1-.1.2-.3.3-.4 0-.2 0-.3-.1-.4 0-.1-.6-1.5-.8-2-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.4s-.9.9-.9 2.2.9 2.6 1 2.7c.1.2 1.7 2.7 4.2 3.7 2.5 1 2.5.7 3 .6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.1-.5-.2z" />
+      </svg>
+      <span className="hidden sm:inline text-[14px] font-semibold">¿Dudas?</span>
+    </a>
+  );
+}
+
+/* ================================================================
+   ÍCONOS Y UTILIDADES
+   ================================================================ */
+function StarIcon({ size = 14, fill = "#D4A74A" }: { size?: number; fill?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} aria-hidden="true">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z" />
+    </svg>
+  );
+}
+
+function StarRow({ count = 5, size = 16 }: { count?: number; size?: number }) {
+  return (
+    <span className="flex items-center gap-px">
+      {Array.from({ length: count }).map((_, i) => (
+        <StarIcon key={i} size={size} />
+      ))}
     </span>
   );
 }
 
-/* ============ ICONOS ============ */
-
 function ArrowRight() {
   return (
-    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.5">
-      <path d="M4 10h12M11 5l5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+      <path d="M5 12h14M13 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
-function StarIcon() {
+
+function CheckGreen() {
   return (
-    <svg className="h-4 w-4 text-gold2" viewBox="0 0 20 20" fill="currentColor">
-      <path d="M10 1l2.6 6 6.4.5-4.9 4.4 1.5 6.4L10 15l-5.6 3.3L5.9 12 1 7.5 7.4 7 10 1z" />
+    <svg className="w-[22px] h-[22px] flex-none mt-0.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="11" fill="#35e897" opacity=".15" />
+      <circle cx="12" cy="12" r="9" fill="#35e897" />
+      <path d="M8 12l3 3 5-6" stroke="#0E0A0C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
-function MPIcon({ small }: { small?: boolean }) {
+
+function MPIcon() {
   return (
-    <svg
-      className={small ? "h-4 w-4" : "h-7 w-7"}
-      style={{ color: "#009EE3" }}
-      viewBox="0 0 24 24"
-      fill="currentColor"
-    >
-      <path d="M12 2L4 5v6c0 5.5 3.4 10.4 8 11.5 4.6-1.1 8-6 8-11.5V5l-8-3zm3.5 10.5l-5 5-2.5-2.5 1.4-1.4 1.1 1.1 3.6-3.6 1.4 1.4z" />
-    </svg>
-  );
-}
-function ClockIcon() {
-  return (
-    <svg className="h-7 w-7 text-gold2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function ShieldIcon() {
-  return (
-    <svg className="h-7 w-7 text-rose" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M12 2l9 4v6c0 5-4 9-9 10-5-1-9-5-9-10V6l9-4z" strokeLinejoin="round" />
-      <path d="M8 12l3 3 5-6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function WhatsappIcon({ className = "h-5 w-5" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M20 3.5A11.8 11.8 0 0 0 2.1 18.5L1 23l4.6-1.1A11.8 11.8 0 1 0 20 3.5zM12 21a9 9 0 0 1-4.6-1.3l-.3-.2-2.7.7.7-2.6-.2-.3A9 9 0 1 1 12 21zm5.1-6.7c-.3-.1-1.7-.8-1.9-.9s-.4-.1-.6.1-.7.9-.9 1.1-.3.2-.6.1a7.3 7.3 0 0 1-3.7-3.2c-.3-.5.3-.5.8-1.5.1-.2 0-.3 0-.5s-.6-1.5-.8-2-.5-.5-.6-.5h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-1 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.5 4c.6.3 1.1.5 1.5.6a3.7 3.7 0 0 0 1.7.1 2.7 2.7 0 0 0 1.8-1.3 2.3 2.3 0 0 0 .2-1.3c-.1-.1-.2-.2-.5-.3z" />
-    </svg>
-  );
-}
-function InstagramIcon() {
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-      <rect x="3" y="3" width="18" height="18" rx="5" />
-      <circle cx="12" cy="12" r="3.5" />
-      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" />
+    <svg className="w-4 h-3 inline-block" viewBox="0 0 24 18" fill="none" aria-hidden="true">
+      <rect x="0.5" y="0.5" width="23" height="17" rx="3" fill="#00B1EA" stroke="rgba(255,255,255,.2)" />
+      <circle cx="8" cy="9" r="4" fill="#FFD700" />
+      <circle cx="16" cy="9" r="4" fill="#FFD700" opacity=".7" />
     </svg>
   );
 }
