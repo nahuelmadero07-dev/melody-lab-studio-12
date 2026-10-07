@@ -484,10 +484,10 @@ function StepEstiloYVoz({
       <div className="mt-10">
         <h2 className="font-display text-xl text-parchment">¿Voz masculina o femenina?</h2>
         <p className="mt-1 text-sm text-parchment-muted">
-          También podés pedir las dos versiones y comparar.
+          También podés elegir un dúo con las dos voces.
         </p>
         <div className="mt-4 grid grid-cols-3 gap-3">
-          {["Masculina", "Femenina", "Las dos"].map((v) => (
+          {["Masculina", "Femenina", "Dúo"].map((v) => (
             <button
               key={v}
               onClick={() => onVoz(v)}

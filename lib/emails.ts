@@ -27,8 +27,7 @@ export function emailCancionLista(args: EmailArgs) {
         Ya está — terminamos de componer la canción para <strong>${escape(args.destinatarioLabel)}</strong>.
       </p>
       <p style="font-size:16px;color:${COLORS.muted};margin:0 0 32px 0;line-height:1.6">
-        Preparamos dos versiones distintas para que elijas la que más te emocione.
-        Podés escuchar un adelanto de cada una gratis. Si te gusta, desbloqueás la
+        Podés escuchar un adelanto gratis. Si te gusta, desbloqueás la
         canción completa (2 min y medio) por ${PRECIO_LABEL}.
       </p>
       ${botonGold("Escuchar mi canción", args.urlEscuchar)}

@@ -30,10 +30,11 @@ export default async function EscucharPage({
   }
 
   // La fuente de verdad son los ARCHIVOS DE AUDIO, no la etiqueta de estado.
-  // Si las dos versiones ya existen, la canción está lista y se muestra,
+  // Si el audio ya existe, la canción está lista y se muestra,
   // aunque el estado haya quedado mal grabado (pasó con versiones viejas del
   // sitio que dejaban pedidos con audio pero estado "generando").
-  const tieneAudios = Boolean(pedido.url_a && pedido.url_b);
+  // Pedidos nuevos: una sola versión (url_a). Pedidos viejos pueden tener url_b también.
+  const tieneAudios = Boolean(pedido.url_a);
 
   /* ------- ESTADO: GENERANDO (y sin audios todavía) ------- */
   if (pedido.status === "generando" && !tieneAudios) {
@@ -98,7 +99,7 @@ export default async function EscucharPage({
       <p className="mt-4 text-parchment-muted">
         {yaPagado
           ? "Podés escucharla, descargarla y compartirla las veces que quieras."
-          : "Preparamos dos versiones. Escuchá 30 segundos de cada una — la que más te emocione es la que se lleva."}
+          : "Escuchá los primeros 30 segundos gratis. Si te emociona, desbloqueás la canción completa."}
       </p>
 
       {/* 🚨 BANNER URGENTE DE DESCARGA — solo cuando ya pagó */}
@@ -115,8 +116,8 @@ export default async function EscucharPage({
                 Importante: descargá las canciones a tu celular
               </p>
               <p className="mt-2 text-sm leading-relaxed text-parchment-muted md:text-base">
-                Buscá los botones dorados grandes debajo de cada canción y tocalos para guardarlas.
-                Si cerrás esta página sin descargarlas, las podés recuperar entrando al link del
+                Buscá el botón dorado grande debajo de la canción y tocalo para guardarla.
+                Si cerrás esta página sin descargarla, la podés recuperar entrando al link del
                 email que te mandamos.
               </p>
             </div>
@@ -127,11 +128,12 @@ export default async function EscucharPage({
       {/* Reproductores */}
       <div className="mt-12 space-y-8">
         <VersionCard
-          etiqueta="Versión A"
-          descripcion="Arreglo acústico e íntimo"
+          etiqueta={urlB ? "Versión A" : "Tu canción"}
+          descripcion={`Para ${pedido.destinatario}`}
           urlAudio={urlA}
           yaPagado={yaPagado}
         />
+        {/* Solo pedidos viejos (de cuando se generaban 2 versiones) tienen url_b */}
         <VersionCard
           etiqueta="Versión B"
           descripcion="Arreglo full band, cinematográfico"
@@ -144,11 +146,11 @@ export default async function EscucharPage({
       {!yaPagado && (
         <div className="mt-14 rounded-2xl border border-gold/20 bg-gold/5 p-8">
           <p className="font-display text-2xl leading-tight text-parchment">
-            ¿Te emocionó? Desbloqueá las canciones completas.
+            ¿Te emocionó? Desbloqueá la canción completa.
           </p>
           <p className="mt-3 text-parchment-muted">
-            Te llevás las dos versiones completas (2 min y medio cada una) para descargar
-            como MP3 y regalar. Único pago, sin suscripción.
+            Te llevás la canción completa (2 min y medio) para descargar como MP3 y
+            regalar. Único pago, sin suscripción.
           </p>
           <div className="mt-6">
             <BotonComprar token={pedido.token} monto={pedido.monto ?? PRECIO_ARS} />
@@ -164,11 +166,11 @@ export default async function EscucharPage({
         <div className="mt-14 space-y-6">
           <div className="rounded-xl border border-parchment-muted/15 bg-night-soft/40 p-5">
             <p className="text-sm font-medium text-parchment">
-              ¿Ya descargaste las dos canciones?
+              ¿Ya descargaste la canción?
             </p>
             <p className="mt-2 text-sm text-parchment-muted">
-              Tocá los botones dorados "Descargar esta canción" arriba. Si cerrás esta página sin
-              bajarlas, las podés recuperar siempre desde el link del email.
+              Tocá el botón dorado "Descargar esta canción" arriba. Si cerrás esta página sin
+              bajarla, la podés recuperar siempre desde el link del email.
             </p>
           </div>
 

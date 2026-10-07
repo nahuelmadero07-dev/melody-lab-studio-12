@@ -7,7 +7,9 @@ import { emailCancionLista } from "@/lib/emails";
 import type { Pedido } from "@/types";
 
 /**
- * PASO 1 DEL PIPELINE: genera la letra con Gemini y encola las 2 canciones en fal.ai.
+ * PASO 1 DEL PIPELINE: genera la letra con Gemini y encola UNA canción en fal.ai.
+ * (Antes se generaban 2 versiones, A y B, y fal.ai cobraba las dos aunque el
+ * cliente no comprara. Ahora se genera solo la versión "A".)
  * Debe correr RÁPIDO (menos de 10 segundos). No espera a que fal termine.
  */
 export async function arrancarPipeline(pedidoId: string, baseUrl: string) {
@@ -19,22 +21,14 @@ export async function arrancarPipeline(pedidoId: string, baseUrl: string) {
     pedido.letra = letra;
     await supabaseAdmin.from("pedidos").update({ letra }).eq("id", pedidoId);
 
-    // 2. Encolamos las 2 canciones — URLs de webhook con datos en el path (no query)
+    // 2. Encolamos UNA sola canción — URL de webhook con datos en el path (no query)
     const webhookA = `${baseUrl}/api/fal-webhook/${pedidoId}/A`;
-    const webhookB = `${baseUrl}/api/fal-webhook/${pedidoId}/B`;
+    const colaA = await encolarCancion(pedido, "A", webhookA);
 
-    const [colaA, colaB] = await Promise.all([
-      encolarCancion(pedido, "A", webhookA),
-      encolarCancion(pedido, "B", webhookB),
-    ]);
-
-    // 3. Guardamos los request_id para trackear
+    // 3. Guardamos el request_id para trackear
     await supabaseAdmin
       .from("pedidos")
-      .update({
-        fal_request_id_a: colaA.requestId,
-        fal_request_id_b: colaB.requestId,
-      })
+      .update({ fal_request_id_a: colaA.requestId })
       .eq("id", pedidoId);
   } catch (err: any) {
     const mensaje = err?.message ?? "Error desconocido al arrancar";
@@ -46,9 +40,8 @@ export async function arrancarPipeline(pedidoId: string, baseUrl: string) {
 /**
  * PASO 2 DEL PIPELINE: procesa el resultado de UNA variante cuando fal.ai avisa.
  *
- * Las dos variantes (A y B) pueden terminar al mismo tiempo, así que este código
- * corre dos veces en paralelo. Todo lo que pasa después de guardar la URL tiene
- * que ser idempotente: solo UNA de las dos ejecuciones marca "listo" y manda el mail.
+ * Hoy se genera solo la variante "A". La transición a "listo" es atómica igual,
+ * por si fal.ai manda el webhook dos veces: solo una ejecución manda el mail.
  */
 export async function finalizarVariante(
   pedidoId: string,
@@ -76,9 +69,9 @@ export async function finalizarVariante(
       .eq("id", pedidoId);
 
     // Transición ATÓMICA generando → listo.
-    // El UPDATE solo afecta la fila si sigue en "generando" y ya tiene las dos URLs.
-    // Si A y B llegan a la vez, la base garantiza que una sola de las dos ve
-    // `listos.length === 1`; la otra ve 0 y no manda mail duplicado.
+    // El UPDATE solo afecta la fila si sigue en "generando" y ya tiene la canción.
+    // Si el webhook llega duplicado, solo una ejecución ve `listos.length === 1`;
+    // la otra ve 0 y no manda mail duplicado.
     const { data: listos, error: errListo } = await supabaseAdmin
       .from("pedidos")
       .update({
@@ -88,7 +81,6 @@ export async function finalizarVariante(
       .eq("id", pedidoId)
       .eq("status", "generando")
       .not("url_a", "is", null)
-      .not("url_b", "is", null)
       .select("id, email, destinatario, token");
 
     if (errListo) {
@@ -96,8 +88,8 @@ export async function finalizarVariante(
     }
 
     if (!listos || listos.length === 0) {
-      // Falta la otra variante todavía, o la otra ejecución ya marcó "listo".
-      console.log(`[pipeline] ${pedidoId} variante ${variante} guardada; esperando la otra`);
+      // Otra ejecución (webhook duplicado) ya marcó "listo".
+      console.log(`[pipeline] ${pedidoId} variante ${variante} guardada; ya estaba marcado listo`);
       return;
     }
 

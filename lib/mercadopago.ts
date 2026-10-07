@@ -31,7 +31,7 @@ export async function crearLinkPago(args: {
         {
           id: args.token,
           title: `Canción personalizada para ${args.destinatario}`,
-          description: "Melody Lab Studio — canción completa con voz cantada, dos versiones",
+          description: "Melody Lab Studio — canción completa con voz cantada",
           quantity: 1,
           unit_price: args.monto,
           currency_id: "ARS", // Ajustar según país. Argentina: ARS

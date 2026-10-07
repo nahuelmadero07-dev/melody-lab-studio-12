@@ -79,19 +79,21 @@ function construirPromptMusical(
   variante: "A" | "B",
   modo: ModoPrompt
 ): string {
+  const vozElegida = pedido.voz.toLowerCase();
+  // "Dúo" (y "Las dos" de pedidos viejos): una sola canción con las dos voces.
   const voz =
-    pedido.voz.toLowerCase().includes("masculina") ||
-    (pedido.voz.toLowerCase().includes("las dos") && variante === "A")
+    vozElegida.includes("dúo") || vozElegida.includes("duo") || vozElegida.includes("las dos")
+      ? "a male and female vocal duet"
+      : vozElegida.includes("masculina")
       ? "a warm male lead vocal"
       : "a warm female lead vocal";
 
   const estiloIngles = traducirEstilo(pedido.estilo);
   const climaIngles = traducirClima(pedido.clima);
 
+  // Se genera una sola versión: arreglo equilibrado, que arranca íntimo y crece.
   const variacion =
-    variante === "A"
-      ? "Warm acoustic arrangement, intimate feel, sparse instrumentation."
-      : "Richer full-band arrangement, cinematic build, layered instrumentation.";
+    "Arrangement true to the genre, starting intimate and building to a fuller, emotional chorus.";
 
   const descripcion =
     `${estiloIngles} song with ${voz} singing in Spanish. ${climaIngles} mood. ` +

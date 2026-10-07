@@ -111,7 +111,7 @@ const TESTIMONIOS = [
 const FAQS = [
   {
     q: "¿Qué recibo exactamente?",
-    a: "Dos versiones diferentes de la canción (misma letra, distinto arreglo) en formato MP3, un link privado para escucharla online y compartirla, y factura electrónica. Todo en el mismo minuto, por mail.",
+    a: "La canción completa en formato MP3, un link privado para escucharla online y compartirla, y factura electrónica. Todo en el mismo minuto, por mail.",
   },
   {
     q: "¿Cuánto tarda?",
@@ -644,7 +644,7 @@ function OfferAndCTA() {
                   </p>
                 </div>
                 <p className="text-[13.5px] text-cream-dim mt-1 m-0">
-                  2 versiones diferentes · descarga MP3 · link para compartir
+                  Canción completa · descarga MP3 · link para compartir
                 </p>
               </div>
             </div>
@@ -923,7 +923,7 @@ function ComoFunciona() {
           <Paso
             n="3"
             titulo="Pagás y la mandás"
-            body={`Si te emociona, pagás ${PRECIO_LABEL} por Mercado Pago y recibís las 2 versiones completas en MP3 más un link para compartir. Todo en el mismo minuto.`}
+            body={`Si te emociona, pagás ${PRECIO_LABEL} por Mercado Pago y recibís la canción completa en MP3 más un link para compartir. Todo en el mismo minuto.`}
           />
         </div>
       </div>
