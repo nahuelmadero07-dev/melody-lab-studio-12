@@ -15,7 +15,7 @@ Supabase.pedidos.insert (status=generando)
       ↓
 [EN BACKGROUND, /api/generar/[id]:]
   Gemini → letra
-  Lyria 3 Pro (fal.ai) x2 → dos versiones cantadas
+  Lyria 3 Pro (fal.ai) x1 → una canción cantada
   Descargar MP3 de fal
   Subir a Backblaze B2 (privado)
   Update Supabase (status=listo)
@@ -126,7 +126,7 @@ melody-lab-studio/
 | Concepto | Costo |
 |---|---|
 | Gemini (letra) | ~$0.001 |
-| Lyria 3 Pro x2 (2 versiones) | $0.16 |
+| Lyria 3 Pro x1 (1 versión) | $0.08 |
 | Backblaze B2 (storage 1 mes) | despreciable |
 | Resend (2 emails) | gratis (< 3000/mes) |
 | Mercado Pago (~5% de $9.90) | $0.50 |
